@@ -40,7 +40,7 @@ SKILL.md Format (YAML Frontmatter, agentskills.io compatible):
       commands: [curl, jq]        #   Command checks remain advisory only.
     compatibility: Requires X     # Optional (agentskills.io)
     metadata:                     # Optional, arbitrary key-value (agentskills.io)
-      hermes:
+      scarlight:
         tags: [fine-tuning, llm]
         related_skills: [peft, lora]
     ---
@@ -69,7 +69,7 @@ Usage:
 import json
 import logging
 
-from hermes_constants import get_hermes_home, display_hermes_home
+from scarlight_constants import get_scarlight_home, display_scarlight_home
 import os
 import re
 from enum import Enum
@@ -77,16 +77,16 @@ from pathlib import Path
 from typing import Dict, Any, List, Optional, Set, Tuple
 
 from tools.registry import registry, tool_error
-from hermes_cli.config import cfg_get
+from scarlight_cli.config import cfg_get
 
 logger = logging.getLogger(__name__)
 
 
-# All skills live in ~/.hermes/skills/ (seeded from bundled skills/ on install).
+# All skills live in ~/.scarlight/skills/ (seeded from bundled skills/ on install).
 # This is the single source of truth -- agent edits, hub installs, and bundled
 # skills all coexist here without polluting the git repo.
-HERMES_HOME = get_hermes_home()
-SKILLS_DIR = HERMES_HOME / "skills"
+SCARLIGHT_HOME = get_scarlight_home()
+SKILLS_DIR = SCARLIGHT_HOME / "skills"
 
 # Anthropic-recommended limits for progressive disclosure efficiency
 MAX_NAME_LENGTH = 64
@@ -108,8 +108,8 @@ _secret_capture_callback = None
 
 
 def load_env() -> Dict[str, str]:
-    """Load profile-scoped environment variables from HERMES_HOME/.env."""
-    env_path = get_hermes_home() / ".env"
+    """Load profile-scoped environment variables from SCARLIGHT_HOME/.env."""
+    env_path = get_scarlight_home() / ".env"
     env_vars: Dict[str, str] = {}
     if not env_path.exists():
         return env_vars
@@ -365,10 +365,10 @@ def _capture_required_environment_variables(
 
 
 def _is_gateway_surface() -> bool:
-    if os.getenv("HERMES_GATEWAY_SESSION"):
+    if os.getenv("SCARLIGHT_GATEWAY_SESSION"):
         return True
     from gateway.session_context import get_session_env
-    return bool(get_session_env("HERMES_SESSION_PLATFORM"))
+    return bool(get_session_env("SCARLIGHT_SESSION_PLATFORM"))
 
 
 def _get_terminal_backend_name() -> str:
@@ -411,7 +411,7 @@ def _gateway_setup_hint() -> str:
 
         return GATEWAY_SECRET_CAPTURE_UNSUPPORTED_MESSAGE
     except Exception:
-        return f"Secure secret entry is not available. Load this skill in the local CLI to be prompted, or add the key to {display_hermes_home()}/.env manually."
+        return f"Secure secret entry is not available. Load this skill in the local CLI to be prompted, or add the key to {display_scarlight_home()}/.env manually."
 
 
 def _build_setup_note(
@@ -447,7 +447,7 @@ def _get_category_from_path(skill_path: Path) -> Optional[str]:
     """
     Extract category from skill path based on directory structure.
 
-    For paths like: ~/.hermes/skills/mlops/axolotl/SKILL.md -> "mlops"
+    For paths like: ~/.scarlight/skills/mlops/axolotl/SKILL.md -> "mlops"
     Also works for external skill dirs configured via skills.external_dirs.
     """
     # Try the module-level SKILLS_DIR first (respects monkeypatching in tests),
@@ -515,11 +515,11 @@ def _get_session_platform() -> str:
 
     Mirrors the platform-resolution logic in
     ``agent.skill_utils.get_disabled_skill_names`` so that
-    ``_is_skill_disabled`` respects ``HERMES_SESSION_PLATFORM``.
+    ``_is_skill_disabled`` respects ``SCARLIGHT_SESSION_PLATFORM``.
     """
     try:
         from gateway.session_context import get_session_env
-        return get_session_env("HERMES_SESSION_PLATFORM") or ""
+        return get_session_env("SCARLIGHT_SESSION_PLATFORM") or ""
     except Exception:
         return ""
 
@@ -529,14 +529,14 @@ def _is_skill_disabled(name: str, platform: str = None) -> bool:
 
     Resolves the active platform from (in order of precedence):
     1. Explicit ``platform`` argument
-    2. ``HERMES_PLATFORM`` environment variable
-    3. ``HERMES_SESSION_PLATFORM`` from gateway session context
+    2. ``SCARLIGHT_PLATFORM`` environment variable
+    3. ``SCARLIGHT_SESSION_PLATFORM`` from gateway session context
     """
     try:
-        from hermes_cli.config import load_config
+        from scarlight_cli.config import load_config
         config = load_config()
         skills_cfg = config.get("skills", {})
-        resolved_platform = platform or os.getenv("HERMES_PLATFORM") or _get_session_platform()
+        resolved_platform = platform or os.getenv("SCARLIGHT_PLATFORM") or _get_session_platform()
         if resolved_platform:
             platform_disabled = cfg_get(skills_cfg, "platform_disabled", resolved_platform)
             if platform_disabled is not None:
@@ -547,11 +547,11 @@ def _is_skill_disabled(name: str, platform: str = None) -> bool:
 
 
 def _find_all_skills(*, skip_disabled: bool = False) -> List[Dict[str, Any]]:
-    """Recursively find all skills in ~/.hermes/skills/ and external dirs.
+    """Recursively find all skills in ~/.scarlight/skills/ and external dirs.
 
     Args:
         skip_disabled: If True, return ALL skills regardless of disabled
-            state (used by ``hermes skills`` config UI). Default False
+            state (used by ``scarlight skills`` config UI). Default False
             filters out disabled skills.
 
     Returns:
@@ -693,7 +693,7 @@ def skills_list(category: str = None, task_id: str = None) -> str:
                     "success": True,
                     "skills": [],
                     "categories": [],
-                    "message": f"No skills found. Skills directory created at {display_hermes_home()}/skills/",
+                    "message": f"No skills found. Skills directory created at {display_scarlight_home()}/skills/",
                 },
                 ensure_ascii=False,
             )
@@ -751,7 +751,7 @@ def _serve_plugin_skill(
     session_id: str | None = None,
 ) -> str:
     """Read a plugin-provided skill, apply guards, return JSON."""
-    from hermes_cli.plugins import _get_disabled_plugins, get_plugin_manager
+    from scarlight_cli.plugins import _get_disabled_plugins, get_plugin_manager
 
     if namespace in _get_disabled_plugins():
         return json.dumps(
@@ -759,7 +759,7 @@ def _serve_plugin_skill(
                 "success": False,
                 "error": (
                     f"Plugin '{namespace}' is disabled. "
-                    f"Re-enable with: hermes plugins enable {namespace}"
+                    f"Re-enable with: scarlight plugins enable {namespace}"
                 ),
             },
             ensure_ascii=False,
@@ -874,7 +874,7 @@ def skill_view(
         # Bare names fall through to the existing flat-tree scan below.
         if ":" in name:
             from agent.skill_utils import is_valid_namespace, parse_qualified_name
-            from hermes_cli.plugins import discover_plugins, get_plugin_manager
+            from scarlight_cli.plugins import discover_plugins, get_plugin_manager
 
             namespace, bare = parse_qualified_name(name)
             if not is_valid_namespace(namespace):
@@ -1082,7 +1082,7 @@ def skill_view(
         if _outside_skills_dir or _injection_detected:
             _warnings = []
             if _outside_skills_dir:
-                _warnings.append(f"skill file is outside the trusted skills directory (~/.hermes/skills/): {skill_md}")
+                _warnings.append(f"skill file is outside the trusted skills directory (~/.scarlight/skills/): {skill_md}")
             if _injection_detected:
                 _warnings.append("skill content contains patterns that may indicate prompt injection")
             logging.getLogger(__name__).warning("Skill security warning for '%s': %s", name, "; ".join(_warnings))
@@ -1111,7 +1111,7 @@ def skill_view(
                     "success": False,
                     "error": (
                         f"Skill '{resolved_name}' is disabled. "
-                        "Enable it with `hermes skills` or inspect the files directly on disk."
+                        "Enable it with `scarlight skills` or inspect the files directly on disk."
                     ),
                 },
                 ensure_ascii=False,
@@ -1267,15 +1267,15 @@ def skill_view(
                     )
 
         # Read tags/related_skills with backward compat:
-        # Check metadata.hermes.* first (agentskills.io convention), fall back to top-level
-        hermes_meta = {}
+        # Check metadata.scarlight.* first (agentskills.io convention), fall back to top-level
+        scarlight_meta = {}
         metadata = frontmatter.get("metadata")
         if isinstance(metadata, dict):
-            hermes_meta = metadata.get("hermes", {}) or {}
+            scarlight_meta = metadata.get("scarlight", {}) or {}
 
-        tags = _parse_tags(hermes_meta.get("tags") or frontmatter.get("tags", ""))
+        tags = _parse_tags(scarlight_meta.get("tags") or frontmatter.get("tags", ""))
         related_skills = _parse_tags(
-            hermes_meta.get("related_skills") or frontmatter.get("related_skills", "")
+            scarlight_meta.get("related_skills") or frontmatter.get("related_skills", "")
         )
 
         # Build linked files structure for clear discovery

@@ -1,21 +1,21 @@
 // The dashboard can be served either at the root of its host (e.g.
 // https://kanban.tilos.com/) or under a URL prefix when reverse-proxied
-// (e.g. https://mission-control.tilos.com/hermes/). The Python backend
-// injects ``window.__HERMES_BASE_PATH__`` into index.html based on the
+// (e.g. https://mission-control.tilos.com/scarlight/). The Python backend
+// injects ``window.__SCARLIGHT_BASE_PATH__`` into index.html based on the
 // incoming ``X-Forwarded-Prefix`` header so the SPA can address its own
 // ``/api/...`` and ``/dashboard-plugins/...`` URLs correctly without a
 // rebuild. Empty string means "served at root".
 function readBasePath(): string {
   if (typeof window === "undefined") return "";
-  const raw = window.__HERMES_BASE_PATH__ ?? "";
+  const raw = window.__SCARLIGHT_BASE_PATH__ ?? "";
   if (!raw) return "";
   // Normalise: ensure leading slash, strip trailing slash.
   const withLead = raw.startsWith("/") ? raw : `/${raw}`;
   return withLead.replace(/\/+$/, "");
 }
 
-export const HERMES_BASE_PATH = readBasePath();
-const BASE = HERMES_BASE_PATH;
+export const SCARLIGHT_BASE_PATH = readBasePath();
+const BASE = SCARLIGHT_BASE_PATH;
 
 import type { DashboardTheme } from "@/themes/types";
 
@@ -23,12 +23,12 @@ import type { DashboardTheme } from "@/themes/types";
 // Injected into index.html by the server — never fetched via API.
 declare global {
   interface Window {
-    __HERMES_SESSION_TOKEN__?: string;
-    __HERMES_BASE_PATH__?: string;
+    __SCARLIGHT_SESSION_TOKEN__?: string;
+    __SCARLIGHT_BASE_PATH__?: string;
   }
 }
 let _sessionToken: string | null = null;
-const SESSION_HEADER = "X-Hermes-Session-Token";
+const SESSION_HEADER = "X-Scarlight-Session-Token";
 
 function setSessionHeader(headers: Headers, token: string): void {
   if (!headers.has(SESSION_HEADER)) {
@@ -39,7 +39,7 @@ function setSessionHeader(headers: Headers, token: string): void {
 export async function fetchJSON<T>(url: string, init?: RequestInit): Promise<T> {
   // Inject the session token into all /api/ requests.
   const headers = new Headers(init?.headers);
-  const token = window.__HERMES_SESSION_TOKEN__;
+  const token = window.__SCARLIGHT_SESSION_TOKEN__;
   if (token) {
     setSessionHeader(headers, token);
   }
@@ -53,12 +53,12 @@ export async function fetchJSON<T>(url: string, init?: RequestInit): Promise<T> 
 
 async function getSessionToken(): Promise<string> {
   if (_sessionToken) return _sessionToken;
-  const injected = window.__HERMES_SESSION_TOKEN__;
+  const injected = window.__SCARLIGHT_SESSION_TOKEN__;
   if (injected) {
     _sessionToken = injected;
     return _sessionToken;
   }
-  throw new Error("Session token not available — page must be served by the Hermes dashboard server");
+  throw new Error("Session token not available — page must be served by the Scarlight dashboard server");
 }
 
 export const api = {
@@ -268,8 +268,8 @@ export const api = {
   // Gateway / update actions
   restartGateway: () =>
     fetchJSON<ActionResponse>("/api/gateway/restart", { method: "POST" }),
-  updateHermes: () =>
-    fetchJSON<ActionResponse>("/api/hermes/update", { method: "POST" }),
+  updateScarlight: () =>
+    fetchJSON<ActionResponse>("/api/scarlight/update", { method: "POST" }),
   getActionStatus: (name: string, lines = 200) =>
     fetchJSON<ActionStatusResponse>(
       `/api/actions/${encodeURIComponent(name)}/status?lines=${lines}`,
@@ -375,7 +375,7 @@ export interface StatusResponse {
   gateway_running: boolean;
   gateway_state: string | null;
   gateway_updated_at: string | null;
-  hermes_home: string;
+  scarlight_home: string;
   latest_config_version: number;
   release_date: string;
   version: string;

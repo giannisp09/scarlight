@@ -2,7 +2,7 @@
  * Hermes Kanban — Dashboard Plugin
  *
  * Board view for the multi-agent collaboration board backed by
- * ~/.hermes/kanban.db. Calls the plugin's backend at /api/plugins/kanban/
+ * ~/.scarlight/kanban.db. Calls the plugin's backend at /api/plugins/kanban/
  * and tails task_events over a WebSocket for live updates.
  *
  * Plain IIFE, no build step. Uses window.__HERMES_PLUGIN_SDK__ for React +
@@ -1172,7 +1172,7 @@
       if (action.kind === "comment") {
         // Scroll the comment input into view; the drawer already has one
         // at the bottom. Focus it so the operator can start typing.
-        const ta = document.querySelector(".hermes-kanban-drawer-comment-row input, .hermes-kanban-drawer-comment-row textarea");
+        const ta = document.querySelector(".scarlight-kanban-drawer-comment-row input, .scarlight-kanban-drawer-comment-row textarea");
         if (ta) {
           ta.scrollIntoView({ behavior: "smooth", block: "nearest" });
           ta.focus();
@@ -1794,7 +1794,7 @@
 
   function BoardColumns(props) {
     const handleDragStart = useCallback(function (e) {
-      const card = e.target.closest && e.target.closest(".hermes-kanban-card");
+      const card = e.target.closest && e.target.closest(".scarlight-kanban-card");
       if (!card) return;
       const taskId = card.getAttribute("data-task-id");
       if (taskId && props.onDragStart) props.onDragStart(taskId);
@@ -2006,7 +2006,7 @@
     const handleDragStart = function (e) {
       e.dataTransfer.setData(MIME_TASK, t.id);
       e.dataTransfer.effectAllowed = "move";
-      const selectedCards = document.querySelectorAll(".hermes-kanban-card--selected");
+      const selectedCards = document.querySelectorAll(".scarlight-kanban-card--selected");
       if (selectedCards.length > 1 && props.selected) {
         const ghost = document.createElement("div");
         ghost.className = "hermes-kanban-drag-ghost";

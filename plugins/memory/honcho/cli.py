@@ -10,9 +10,9 @@ import os
 import sys
 from pathlib import Path
 
-from hermes_constants import get_hermes_home
+from scarlight_constants import get_scarlight_home
 from plugins.memory.honcho.client import resolve_active_host, resolve_config_path, HOST
-from hermes_cli.config import cfg_get
+from scarlight_cli.config import cfg_get
 
 
 def clone_honcho_for_profile(profile_name: str) -> bool:
@@ -159,7 +159,7 @@ def cmd_sync(args) -> None:
     have one yet. Inherits settings from the default host block.
     """
     try:
-        from hermes_cli.profiles import list_profiles
+        from scarlight_cli.profiles import list_profiles
         profiles = list_profiles()
     except Exception as e:
         print(f"  Could not list profiles: {e}\n")
@@ -204,7 +204,7 @@ def sync_honcho_profiles_quiet() -> int:
     Called from `hermes update` -- no output, no exceptions.
     """
     try:
-        from hermes_cli.profiles import list_profiles
+        from scarlight_cli.profiles import list_profiles
         profiles = list_profiles()
     except Exception:
         return 0
@@ -247,11 +247,11 @@ def _config_path() -> Path:
 def _local_config_path() -> Path:
     """Return the instance-local Honcho config path for writing.
 
-    Always returns $HERMES_HOME/honcho.json so each profile/instance gets
+    Always returns $SCARLIGHT_HOME/honcho.json so each profile/instance gets
     its own config file.  The global ~/.honcho/config.json is only used as
     a read fallback (via resolve_config_path) for cross-app interop.
     """
-    return get_hermes_home() / "honcho.json"
+    return get_scarlight_home() / "honcho.json"
 
 
 def _read_config() -> dict:
@@ -541,7 +541,7 @@ def cmd_setup(args) -> None:
 
     # --- Auto-enable Honcho as memory provider in config.yaml ---
     try:
-        from hermes_cli.config import load_config, save_config
+        from scarlight_cli.config import load_config, save_config
         hermes_config = load_config()
         hermes_config.setdefault("memory", {})["provider"] = "honcho"
         save_config(hermes_config)
@@ -590,7 +590,7 @@ def _active_profile_name() -> str:
     if _profile_override:
         return _profile_override
     try:
-        from hermes_cli.profiles import get_active_profile_name
+        from scarlight_cli.profiles import get_active_profile_name
         return get_active_profile_name()
     except Exception:
         return "default"
@@ -602,7 +602,7 @@ def _all_profile_host_configs() -> list[tuple[str, str, dict]]:
     Reads honcho.json once and maps each profile to its host block.
     """
     try:
-        from hermes_cli.profiles import list_profiles
+        from scarlight_cli.profiles import list_profiles
         profiles = list_profiles()
     except Exception:
         return [(_active_profile_name(), _host_key(), {})]
@@ -1315,7 +1315,7 @@ def honcho_command(args) -> None:
         # Redirect to memory setup — honcho setup goes through the unified path
         print("\n  Honcho is configured via the memory provider system.")
         print("  Running 'hermes memory setup'...\n")
-        from hermes_cli.memory_setup import cmd_setup_provider
+        from scarlight_cli.memory_setup import cmd_setup_provider
         cmd_setup_provider("honcho")
         return
     elif sub is None:

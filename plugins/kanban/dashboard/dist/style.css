@@ -5,7 +5,7 @@
  * active dashboard theme. No hardcoded palette.
  */
 
-.hermes-kanban {
+.scarlight-kanban {
   width: 100%;
 }
 
@@ -18,11 +18,11 @@
  * surfaces that must read as plain text on the board's own background.
  *
  * Rather than play whack-a-mole with theme rules (the pre-#21086 approach
- * was a single ``.hermes-kanban code { background: transparent }`` rule
+ * was a single ``.scarlight-kanban code { background: transparent }`` rule
  * that lost specificity fights in the drawer context), reset EVERY
  * <code>/<pre> inside the kanban plugin container to transparent with
  * ``!important``, then opt back in ONLY on the class that carries
- * intentional styling (``.hermes-kanban-md code``, the inline code pill
+ * intentional styling (``.scarlight-kanban-md code``, the inline code pill
  * inside rendered task-body Markdown).
  *
  * Net effect: any new theme, shipped or third-party, can introduce
@@ -31,10 +31,10 @@
  * Regression coverage: #21086 (task-drawer event payloads unreadable
  * across every shipped theme).
  */
-.hermes-kanban code,
-.hermes-kanban pre,
-.hermes-kanban-drawer code,
-.hermes-kanban-drawer pre {
+.scarlight-kanban code,
+.scarlight-kanban pre,
+.scarlight-kanban-drawer code,
+.scarlight-kanban-drawer pre {
   background: transparent !important;
   color: inherit;
 }
@@ -48,28 +48,28 @@
  * so the pill renders consistently even when a theme forgets to set
  * ``--color-foreground`` (pre-existing safeguard from #18576).
  */
-.hermes-kanban .hermes-kanban-md code:not(.hermes-kanban-md-code *) {
+.scarlight-kanban .scarlight-kanban-md code:not(.scarlight-kanban-md-code *) {
   background: color-mix(in srgb, currentColor 8%, transparent) !important;
 }
 /* Tighten contrast on the drawer-specific payload class — it lives on
  * its own line in the events list, so matching the muted-foreground
  * color keeps it visually distinct from the event title without
  * screaming for attention. */
-.hermes-kanban-event-payload,
-.hermes-kanban-drawer .hermes-kanban-event-payload {
+.scarlight-kanban-event-payload,
+.scarlight-kanban-drawer .scarlight-kanban-event-payload {
   color: var(--color-muted-foreground) !important;
 }
 
 /* ---- Columns layout -------------------------------------------------- */
 
-.hermes-kanban-columns {
+.scarlight-kanban-columns {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
   gap: 0.75rem;
   align-items: start;
 }
 
-.hermes-kanban-column {
+.scarlight-kanban-column {
   display: flex;
   flex-direction: column;
   background: color-mix(in srgb, var(--color-card) 85%, transparent);
@@ -81,12 +81,12 @@
   transition: border-color 120ms ease, background-color 120ms ease;
 }
 
-.hermes-kanban-column--drop {
+.scarlight-kanban-column--drop {
   border-color: var(--color-ring);
   background: color-mix(in srgb, var(--color-ring) 8%, var(--color-card));
 }
 
-.hermes-kanban-column-header {
+.scarlight-kanban-column-header {
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -96,19 +96,19 @@
   color: var(--color-foreground);
 }
 
-.hermes-kanban-column-label {
+.scarlight-kanban-column-label {
   flex: 1;
   letter-spacing: 0.01em;
 }
 
-.hermes-kanban-column-count {
+.scarlight-kanban-column-count {
   font-variant-numeric: tabular-nums;
   color: var(--color-muted-foreground);
   font-size: 0.75rem;
   font-weight: 500;
 }
 
-.hermes-kanban-column-add {
+.scarlight-kanban-column-add {
   appearance: none;
   background: transparent;
   border: 1px solid var(--color-border);
@@ -120,11 +120,11 @@
   font-size: 1rem;
   cursor: pointer;
 }
-.hermes-kanban-column-add:hover {
+.scarlight-kanban-column-add:hover {
   background: color-mix(in srgb, var(--color-foreground) 8%, transparent);
 }
 
-.hermes-kanban-column-sub {
+.scarlight-kanban-column-sub {
   padding: 0 0.25rem 0.5rem;
   font-size: 0.7rem;
   color: var(--color-muted-foreground);
@@ -132,7 +132,7 @@
   margin-bottom: 0.5rem;
 }
 
-.hermes-kanban-column-body {
+.scarlight-kanban-column-body {
   display: flex;
   flex-direction: column;
   gap: 0.45rem;
@@ -140,7 +140,7 @@
   padding-right: 0.1rem;
 }
 
-.hermes-kanban-empty {
+.scarlight-kanban-empty {
   padding: 1.5rem 0.5rem;
   text-align: center;
   font-size: 0.75rem;
@@ -151,24 +151,24 @@
 
 /* ---- Status dots ----------------------------------------------------- */
 
-.hermes-kanban-dot {
+.scarlight-kanban-dot {
   display: inline-block;
   width: 0.5rem;
   height: 0.5rem;
   border-radius: 999px;
   background: var(--color-muted-foreground);
 }
-.hermes-kanban-dot-triage   { background: #b47dd6; }  /* lilac — fresh/unspecified */
-.hermes-kanban-dot-todo     { background: var(--color-muted-foreground); }
-.hermes-kanban-dot-ready    { background: #d4b348; }  /* amber */
-.hermes-kanban-dot-running  { background: #3fb97d; }  /* green */
-.hermes-kanban-dot-blocked  { background: var(--color-destructive, #d14a4a); }
-.hermes-kanban-dot-done     { background: #4a8cd1; }  /* blue */
-.hermes-kanban-dot-archived { background: var(--color-border); }
+.scarlight-kanban-dot-triage   { background: #b47dd6; }  /* lilac — fresh/unspecified */
+.scarlight-kanban-dot-todo     { background: var(--color-muted-foreground); }
+.scarlight-kanban-dot-ready    { background: #d4b348; }  /* amber */
+.scarlight-kanban-dot-running  { background: #3fb97d; }  /* green */
+.scarlight-kanban-dot-blocked  { background: var(--color-destructive, #d14a4a); }
+.scarlight-kanban-dot-done     { background: #4a8cd1; }  /* blue */
+.scarlight-kanban-dot-archived { background: var(--color-border); }
 
 /* ---- Progress pill (N/M child tasks done) --------------------------- */
 
-.hermes-kanban-progress {
+.scarlight-kanban-progress {
   font-family: var(--font-mono, ui-monospace, monospace);
   font-size: 0.62rem;
   padding: 0.05rem 0.35rem;
@@ -178,7 +178,7 @@
   color: var(--color-muted-foreground);
   letter-spacing: 0.02em;
 }
-.hermes-kanban-progress--full {
+.scarlight-kanban-progress--full {
   background: color-mix(in srgb, #3fb97d 22%, transparent);
   border-color: color-mix(in srgb, #3fb97d 45%, transparent);
   color: var(--color-foreground);
@@ -186,18 +186,18 @@
 
 /* ---- Lanes (per-profile sub-grouping inside Running) ---------------- */
 
-.hermes-kanban-lane {
+.scarlight-kanban-lane {
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
   padding: 0.25rem 0 0.35rem;
   border-top: 1px dashed color-mix(in srgb, var(--color-border) 70%, transparent);
 }
-.hermes-kanban-lane:first-child {
+.scarlight-kanban-lane:first-child {
   border-top: 0;
   padding-top: 0;
 }
-.hermes-kanban-lane-head {
+.scarlight-kanban-lane-head {
   display: flex;
   align-items: center;
   gap: 0.4rem;
@@ -209,51 +209,51 @@
   color: var(--color-muted-foreground);
   padding: 0 0.1rem;
 }
-.hermes-kanban-lane-name {
+.scarlight-kanban-lane-name {
   font-weight: 600;
   font-family: var(--font-mono, ui-monospace, monospace);
 }
-.hermes-kanban-lane-count {
+.scarlight-kanban-lane-count {
   margin-left: auto;
   font-variant-numeric: tabular-nums;
 }
 
 /* ---- Card ------------------------------------------------------------ */
 
-.hermes-kanban-card {
+.scarlight-kanban-card {
   cursor: grab;
   transition: transform 100ms ease, box-shadow 100ms ease;
 }
-.hermes-kanban-card:hover {
+.scarlight-kanban-card:hover {
   box-shadow: 0 1px 0 0 var(--color-ring) inset, 0 0 0 1px var(--color-ring) inset;
 }
-.hermes-kanban-card:active {
+.scarlight-kanban-card:active {
   cursor: grabbing;
   transform: scale(0.995);
 }
 
-.hermes-kanban-card-content {
+.scarlight-kanban-card-content {
   padding: 0.5rem 0.6rem !important;
   display: flex;
   flex-direction: column;
   gap: 0.3rem;
 }
 
-.hermes-kanban-card-row {
+.scarlight-kanban-card-row {
   display: flex;
   align-items: center;
   gap: 0.35rem;
   flex-wrap: wrap;
 }
 
-.hermes-kanban-card-id {
+.scarlight-kanban-card-id {
   font-family: var(--font-mono, ui-monospace, monospace);
   font-size: 0.65rem;
   color: var(--color-muted-foreground);
   letter-spacing: 0.03em;
 }
 
-.hermes-kanban-card-title {
+.scarlight-kanban-card-title {
   font-size: 0.85rem;
   font-weight: 500;
   line-height: 1.3;
@@ -261,13 +261,13 @@
   word-break: break-word;
 }
 
-.hermes-kanban-card-meta {
+.scarlight-kanban-card-meta {
   font-size: 0.7rem;
   color: var(--color-muted-foreground);
   gap: 0.55rem;
 }
 
-.hermes-kanban-priority {
+.scarlight-kanban-priority {
   font-size: 0.6rem !important;
   padding: 0.05rem 0.3rem !important;
   background: color-mix(in srgb, var(--color-ring) 18%, transparent);
@@ -275,25 +275,25 @@
   border: 1px solid color-mix(in srgb, var(--color-ring) 40%, transparent);
 }
 
-.hermes-kanban-tag {
+.scarlight-kanban-tag {
   font-size: 0.6rem !important;
   padding: 0.05rem 0.3rem !important;
 }
 
-.hermes-kanban-assignee {
+.scarlight-kanban-assignee {
   font-weight: 500;
   color: color-mix(in srgb, var(--color-foreground) 80%, var(--color-muted-foreground));
 }
-.hermes-kanban-unassigned {
+.scarlight-kanban-unassigned {
   font-style: italic;
 }
-.hermes-kanban-ago {
+.scarlight-kanban-ago {
   margin-left: auto;
 }
 
 /* ---- Inline create --------------------------------------------------- */
 
-.hermes-kanban-inline-create {
+.scarlight-kanban-inline-create {
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
@@ -304,14 +304,14 @@
   border-radius: var(--radius-sm, 0.25rem);
 }
 
-.hermes-kanban-inline-create > .flex.gap-2:last-child > button:first-of-type {
+.scarlight-kanban-inline-create > .flex.gap-2:last-child > button:first-of-type {
   flex: 1;
   min-width: 0;
 }
 
 /* ---- Drawer (task detail side panel) --------------------------------- */
 
-.hermes-kanban-drawer-shade {
+.scarlight-kanban-drawer-shade {
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.45);
@@ -320,7 +320,7 @@
   justify-content: flex-end;
 }
 
-.hermes-kanban-drawer {
+.scarlight-kanban-drawer {
   width: min(var(--hermes-kanban-drawer-width, 640px), 92vw);
   height: 100vh;
   background: var(--color-card);
@@ -336,7 +336,7 @@
   to   { transform: translateX(0);    opacity: 1; }
 }
 
-.hermes-kanban-drawer-head {
+.scarlight-kanban-drawer-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -345,7 +345,7 @@
   font-family: var(--font-mono, ui-monospace, monospace);
 }
 
-.hermes-kanban-drawer-close {
+.scarlight-kanban-drawer-close {
   appearance: none;
   background: transparent;
   border: 0;
@@ -355,9 +355,9 @@
   cursor: pointer;
   padding: 0 0.25rem;
 }
-.hermes-kanban-drawer-close:hover { color: var(--color-foreground); }
+.scarlight-kanban-drawer-close:hover { color: var(--color-foreground); }
 
-.hermes-kanban-drawer-body {
+.scarlight-kanban-drawer-body {
   flex: 1;
   overflow-y: auto;
   padding: 0.9rem;
@@ -366,7 +366,7 @@
   gap: 0.85rem;
 }
 
-.hermes-kanban-drawer-title {
+.scarlight-kanban-drawer-title {
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -374,7 +374,7 @@
   font-weight: 600;
 }
 
-.hermes-kanban-drawer-meta {
+.scarlight-kanban-drawer-meta {
   display: flex;
   flex-direction: column;
   gap: 0.15rem;
@@ -384,41 +384,41 @@
   border-radius: var(--radius-sm, 0.25rem);
 }
 
-.hermes-kanban-meta-row {
+.scarlight-kanban-meta-row {
   display: flex;
   gap: 0.5rem;
   font-size: 0.8rem;
 }
-.hermes-kanban-meta-label {
+.scarlight-kanban-meta-label {
   width: 92px;
   color: var(--color-muted-foreground);
 }
-.hermes-kanban-meta-value {
+.scarlight-kanban-meta-value {
   color: var(--color-foreground);
   word-break: break-word;
 }
 
-.hermes-kanban-actions {
+.scarlight-kanban-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 0.3rem;
 }
 
 /* Specifier result banner — sits directly under the status action row. */
-.hermes-kanban-msg-ok,
-.hermes-kanban-msg-err {
+.scarlight-kanban-msg-ok,
+.scarlight-kanban-msg-err {
   margin-top: 0.4rem;
   padding: 0.35rem 0.55rem;
   border-radius: 0.375rem;
   font-size: 0.85rem;
   line-height: 1.3;
 }
-.hermes-kanban-msg-ok {
+.scarlight-kanban-msg-ok {
   background: rgba(46, 160, 67, 0.12);
   color: #2ea043;
   border: 1px solid rgba(46, 160, 67, 0.35);
 }
-.hermes-kanban-msg-err {
+.scarlight-kanban-msg-err {
   background: rgba(248, 81, 73, 0.12);
   color: #f85149;
   border: 1px solid rgba(248, 81, 73, 0.35);
@@ -426,17 +426,17 @@
 
 /* ---- Home channel subscription toggles (per-platform, per-task) ----- */
 
-.hermes-kanban-home-subs {
+.scarlight-kanban-home-subs {
   display: flex;
   flex-wrap: wrap;
   gap: 0.3rem;
 }
-.hermes-kanban-home-sub {
+.scarlight-kanban-home-sub {
   font-family: var(--font-mono, ui-monospace, monospace);
   text-transform: lowercase;
   letter-spacing: 0.02em;
 }
-.hermes-kanban-home-sub--on {
+.scarlight-kanban-home-sub--on {
   /* Subscribed toggle — use a strong ring-colored accent so the on/off
    * distinction reads at a glance, not just from the ✓ prefix. Border +
    * filled background + bolder weight keep the state obvious across
@@ -448,13 +448,13 @@
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-ring) 40%, transparent);
 }
 
-.hermes-kanban-section {
+.scarlight-kanban-section {
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
 }
 
-.hermes-kanban-section-head {
+.scarlight-kanban-section-head {
   font-size: 0.72rem;
   font-weight: 600;
   text-transform: uppercase;
@@ -462,7 +462,7 @@
   color: var(--color-muted-foreground);
 }
 
-.hermes-kanban-pre {
+.scarlight-kanban-pre {
   margin: 0;
   padding: 0.5rem 0.6rem;
   white-space: pre-wrap;
@@ -476,7 +476,7 @@
   color: var(--color-foreground);
 }
 
-.hermes-kanban-comment {
+.scarlight-kanban-comment {
   border-left: 2px solid color-mix(in srgb, var(--color-ring) 35%, transparent);
   padding-left: 0.5rem;
   display: flex;
@@ -484,31 +484,31 @@
   gap: 0.2rem;
 }
 
-.hermes-kanban-comment-head {
+.scarlight-kanban-comment-head {
   display: flex;
   gap: 0.5rem;
   font-size: 0.7rem;
 }
-.hermes-kanban-comment-author {
+.scarlight-kanban-comment-author {
   font-weight: 600;
   color: var(--color-foreground);
 }
-.hermes-kanban-comment-ago {
+.scarlight-kanban-comment-ago {
   color: var(--color-muted-foreground);
 }
 
-.hermes-kanban-event {
+.scarlight-kanban-event {
   display: flex;
   gap: 0.5rem;
   font-size: 0.7rem;
   color: var(--color-muted-foreground);
   font-family: var(--font-mono, ui-monospace, monospace);
 }
-.hermes-kanban-event-kind {
+.scarlight-kanban-event-kind {
   color: var(--color-foreground);
   min-width: 6rem;
 }
-.hermes-kanban-event-payload {
+.scarlight-kanban-event-payload {
   color: var(--color-muted-foreground);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -516,7 +516,7 @@
   max-width: 280px;
 }
 
-.hermes-kanban-drawer-comment-row {
+.scarlight-kanban-drawer-comment-row {
   display: flex;
   gap: 0.4rem;
   padding: 0.55rem 0.75rem;
@@ -524,7 +524,7 @@
   background: color-mix(in srgb, var(--color-card) 90%, transparent);
 }
 
-.hermes-kanban-count {
+.scarlight-kanban-count {
   display: inline-flex;
   gap: 0.2rem;
   align-items: center;
@@ -532,7 +532,7 @@
 
 /* ---- Selection chrome ----------------------------------------------- */
 
-.hermes-kanban-card--selected :where(.hermes-kanban-card-content) {
+.scarlight-kanban-card--selected :where(.scarlight-kanban-card-content) {
   box-shadow: 0 0 0 2px var(--color-ring) inset,
               0 0 0 1px var(--color-ring) inset;
   background: color-mix(in srgb, var(--color-ring) 6%, var(--color-card));
@@ -541,13 +541,13 @@
 /* Batch drag source styling — cards that are part of the current multi-drag.
    The browser ghost image floats; we dim the original DOM nodes so the user
    sees the whole set is in-flight. */
-.hermes-kanban-card--dragging-source :where(.hermes-kanban-card-content) {
+.scarlight-kanban-card--dragging-source :where(.scarlight-kanban-card-content) {
   opacity: 0.45;
   filter: grayscale(0.6);
   transition: opacity 120ms ease, filter 120ms ease;
 }
 
-.hermes-kanban-card-check {
+.scarlight-kanban-card-check {
   width: 0.85rem;
   height: 0.85rem;
   margin: 0;
@@ -557,7 +557,7 @@
 
 /* ---- Bulk action bar ------------------------------------------------ */
 
-.hermes-kanban-bulk {
+.scarlight-kanban-bulk {
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -567,25 +567,25 @@
   border-radius: var(--radius-sm, 0.25rem);
   flex-wrap: wrap;
 }
-.hermes-kanban-bulk-count {
+.scarlight-kanban-bulk-count {
   font-weight: 600;
   font-size: 0.75rem;
   padding-right: 0.25rem;
 }
 
-.hermes-kanban-bulk > button,
-.hermes-kanban-bulk-reassign > button {
+.scarlight-kanban-bulk > button,
+.scarlight-kanban-bulk-reassign > button {
   height: 1.7rem !important;
   padding: 0 0.5rem !important;
   font-size: 0.7rem !important;
   border: 1px solid var(--color-border);
   cursor: pointer;
 }
-.hermes-kanban-bulk > button:hover:not(:disabled),
-.hermes-kanban-bulk-reassign > button:hover:not(:disabled) {
+.scarlight-kanban-bulk > button:hover:not(:disabled),
+.scarlight-kanban-bulk-reassign > button:hover:not(:disabled) {
   background: color-mix(in srgb, var(--color-foreground) 8%, transparent);
 }
-.hermes-kanban-bulk-reassign {
+.scarlight-kanban-bulk-reassign {
   display: flex;
   align-items: center;
   gap: 0.25rem;
@@ -595,31 +595,31 @@
 
 /* ---- Dependency editor chips --------------------------------------- */
 
-.hermes-kanban-deps-row {
+.scarlight-kanban-deps-row {
   display: flex;
   align-items: center;
   gap: 0.5rem;
   margin-bottom: 0.4rem;
 }
-.hermes-kanban-deps-label {
+.scarlight-kanban-deps-label {
   font-size: 0.68rem;
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: var(--color-muted-foreground);
   min-width: 4rem;
 }
-.hermes-kanban-deps-chips {
+.scarlight-kanban-deps-chips {
   display: flex;
   gap: 0.3rem;
   flex-wrap: wrap;
   flex: 1;
 }
-.hermes-kanban-deps-empty {
+.scarlight-kanban-deps-empty {
   font-size: 0.7rem;
   color: var(--color-muted-foreground);
   font-style: italic;
 }
-.hermes-kanban-dep-chip {
+.scarlight-kanban-dep-chip {
   display: inline-flex;
   align-items: center;
   gap: 0.15rem;
@@ -631,7 +631,7 @@
   font-size: 0.68rem;
   color: var(--color-foreground);
 }
-.hermes-kanban-dep-chip-x {
+.scarlight-kanban-dep-chip-x {
   appearance: none;
   background: transparent;
   border: 0;
@@ -641,43 +641,43 @@
   line-height: 1;
   padding: 0 0.15rem;
 }
-.hermes-kanban-dep-chip-x:hover { color: var(--color-destructive, #d14a4a); }
+.scarlight-kanban-dep-chip-x:hover { color: var(--color-destructive, #d14a4a); }
 
 /* ---- Inline edit affordances --------------------------------------- */
 
-.hermes-kanban-editable {
+.scarlight-kanban-editable {
   cursor: pointer;
   border-bottom: 1px dotted color-mix(in srgb, var(--color-border) 80%, transparent);
 }
-.hermes-kanban-editable:hover {
+.scarlight-kanban-editable:hover {
   color: var(--color-foreground);
   border-bottom-color: var(--color-ring);
 }
 
-.hermes-kanban-drawer-title-text {
+.scarlight-kanban-drawer-title-text {
   cursor: pointer;
 }
-.hermes-kanban-drawer-title-text:hover {
+.scarlight-kanban-drawer-title-text:hover {
   text-decoration: underline;
   text-decoration-color: var(--color-ring);
   text-decoration-style: dotted;
   text-underline-offset: 3px;
 }
 
-.hermes-kanban-edit-row {
+.scarlight-kanban-edit-row {
   display: flex;
   align-items: center;
   gap: 0.35rem;
   width: 100%;
 }
 
-.hermes-kanban-section-head-row {
+.scarlight-kanban-section-head-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 0.5rem;
 }
-.hermes-kanban-edit-link {
+.scarlight-kanban-edit-link {
   appearance: none;
   background: transparent;
   border: 0;
@@ -688,9 +688,9 @@
   cursor: pointer;
   padding: 0;
 }
-.hermes-kanban-edit-link:hover { color: var(--color-ring); }
+.scarlight-kanban-edit-link:hover { color: var(--color-ring); }
 
-.hermes-kanban-textarea {
+.scarlight-kanban-textarea {
   width: 100%;
   min-height: 8rem;
   background: var(--color-card);
@@ -703,7 +703,7 @@
   line-height: 1.5;
   resize: vertical;
 }
-.hermes-kanban-textarea:focus {
+.scarlight-kanban-textarea:focus {
   outline: none;
   border-color: var(--color-ring);
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-ring) 30%, transparent);
@@ -711,33 +711,33 @@
 
 /* ---- Markdown rendering -------------------------------------------- */
 
-.hermes-kanban-md {
+.scarlight-kanban-md {
   font-size: 0.85rem;
   line-height: 1.6;
   color: var(--color-foreground);
 }
-.hermes-kanban-md p  { margin: 0.25rem 0; }
-.hermes-kanban-md h1,
-.hermes-kanban-md h2,
-.hermes-kanban-md h3,
-.hermes-kanban-md h4 {
+.scarlight-kanban-md p  { margin: 0.25rem 0; }
+.scarlight-kanban-md h1,
+.scarlight-kanban-md h2,
+.scarlight-kanban-md h3,
+.scarlight-kanban-md h4 {
   margin: 0.6rem 0 0.2rem;
   line-height: 1.25;
 }
-.hermes-kanban-md h1 { font-size: 1.05rem; }
-.hermes-kanban-md h2 { font-size: 0.95rem; }
-.hermes-kanban-md h3 { font-size: 0.88rem; }
-.hermes-kanban-md h4 { font-size: 0.82rem; }
-.hermes-kanban-md ul {
+.scarlight-kanban-md h1 { font-size: 1.05rem; }
+.scarlight-kanban-md h2 { font-size: 0.95rem; }
+.scarlight-kanban-md h3 { font-size: 0.88rem; }
+.scarlight-kanban-md h4 { font-size: 0.82rem; }
+.scarlight-kanban-md ul {
   margin: 0.25rem 0 0.25rem 1.1rem;
   padding: 0;
 }
-.hermes-kanban-md li { margin: 0.1rem 0; }
-.hermes-kanban-md a {
+.scarlight-kanban-md li { margin: 0.1rem 0; }
+.scarlight-kanban-md a {
   color: var(--color-ring);
   text-decoration: underline;
 }
-.hermes-kanban-md code {
+.scarlight-kanban-md code {
   font-family: var(--font-mono, ui-monospace, monospace);
   font-size: 0.8rem;
   padding: 0.05rem 0.3rem;
@@ -753,11 +753,11 @@
  * UA default on <code> elements — otherwise themes that don't set
  * --color-foreground leave code text rendering near-black on dark themes
  * (see issue #18576). */
-.hermes-kanban pre.hermes-kanban-md-code {
+.scarlight-kanban pre.scarlight-kanban-md-code {
   margin: 0.35rem 0;
   padding: 0.5rem 0.6rem;
-  /* Higher specificity (``.hermes-kanban pre.hermes-kanban-md-code`` vs
-   * the reset's ``.hermes-kanban pre``) so this intentional pill wins
+  /* Higher specificity (``.scarlight-kanban pre.scarlight-kanban-md-code`` vs
+   * the reset's ``.scarlight-kanban pre``) so this intentional pill wins
    * over our own ``<pre>`` reset. ``!important`` also needed so theme
    * rules that drop their own ``code``/``pre`` fill don't knock it out
    * either. #21086. */
@@ -766,18 +766,18 @@
   border-radius: var(--radius-sm, 0.25rem);
   overflow-x: auto;
 }
-.hermes-kanban-md-code code {
+.scarlight-kanban-md-code code {
   background: transparent;
   padding: 0;
   font-size: 0.8rem;
   white-space: pre;
   color: inherit;
 }
-.hermes-kanban-md strong { font-weight: 600; }
+.scarlight-kanban-md strong { font-weight: 600; }
 
 /* ---- Touch-drag proxy ---------------------------------------------- */
 
-.hermes-kanban-touch-proxy {
+.scarlight-kanban-touch-proxy {
   pointer-events: none;
   opacity: 0.85;
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
@@ -787,7 +787,7 @@
 
 /* ---- Multi-drag ghost ----------------------------------------------- */
 
-.hermes-kanban-drag-ghost {
+.scarlight-kanban-drag-ghost {
   position: fixed;
   left: -9999px;
   padding: 0.45rem 0.8rem;
@@ -804,24 +804,24 @@
 
 /* ---- Staleness tiers ------------------------------------------------ */
 
-.hermes-kanban-card--stale-amber :where(.hermes-kanban-card-content) {
+.scarlight-kanban-card--stale-amber :where(.scarlight-kanban-card-content) {
   box-shadow: 0 0 0 1px #d4b34888 inset;
 }
-.hermes-kanban-card--stale-amber:hover :where(.hermes-kanban-card-content) {
+.scarlight-kanban-card--stale-amber:hover :where(.scarlight-kanban-card-content) {
   box-shadow: 0 0 0 2px #d4b348 inset;
 }
-.hermes-kanban-card--stale-red :where(.hermes-kanban-card-content) {
+.scarlight-kanban-card--stale-red :where(.scarlight-kanban-card-content) {
   box-shadow: 0 0 0 1px var(--color-destructive, #d14a4a) inset,
               0 0 8px color-mix(in srgb, var(--color-destructive, #d14a4a) 30%, transparent);
 }
-.hermes-kanban-card--stale-red:hover :where(.hermes-kanban-card-content) {
+.scarlight-kanban-card--stale-red:hover :where(.scarlight-kanban-card-content) {
   box-shadow: 0 0 0 2px var(--color-destructive, #d14a4a) inset,
               0 0 10px color-mix(in srgb, var(--color-destructive, #d14a4a) 45%, transparent);
 }
 
 /* ---- Worker log pane ------------------------------------------------ */
 
-.hermes-kanban-log {
+.scarlight-kanban-log {
   max-height: 360px;
   overflow: auto;
   white-space: pre;
@@ -832,57 +832,57 @@
 
 /* ---- Run history (per-attempt log in the drawer) ------------------- */
 
-.hermes-kanban-run {
+.scarlight-kanban-run {
   border-left: 2px solid var(--color-border);
   padding: 0.35rem 0.5rem;
   margin-bottom: 0.4rem;
   background: color-mix(in srgb, var(--color-foreground) 3%, transparent);
   border-radius: var(--radius-sm, 0.25rem);
 }
-.hermes-kanban-run--active  { border-left-color: #3fb97d; }
-.hermes-kanban-run--completed { border-left-color: #4a8cd1; }
-.hermes-kanban-run--ended { border-left-color: #6b7280; }  /* generic fallback when outcome is unset */
-.hermes-kanban-run--blocked { border-left-color: var(--color-destructive, #d14a4a); }
-.hermes-kanban-run--crashed,
-.hermes-kanban-run--timed_out,
-.hermes-kanban-run--gave_up,
-.hermes-kanban-run--spawn_failed {
+.scarlight-kanban-run--active  { border-left-color: #3fb97d; }
+.scarlight-kanban-run--completed { border-left-color: #4a8cd1; }
+.scarlight-kanban-run--ended { border-left-color: #6b7280; }  /* generic fallback when outcome is unset */
+.scarlight-kanban-run--blocked { border-left-color: var(--color-destructive, #d14a4a); }
+.scarlight-kanban-run--crashed,
+.scarlight-kanban-run--timed_out,
+.scarlight-kanban-run--gave_up,
+.scarlight-kanban-run--spawn_failed {
   border-left-color: var(--color-destructive, #d14a4a);
   background: color-mix(in srgb, var(--color-destructive, #d14a4a) 6%, transparent);
 }
-.hermes-kanban-run--reclaimed { border-left-color: #d4b348; }
+.scarlight-kanban-run--reclaimed { border-left-color: #d4b348; }
 
-.hermes-kanban-run-head {
+.scarlight-kanban-run-head {
   display: flex;
   align-items: center;
   gap: 0.6rem;
   font-size: 0.7rem;
 }
-.hermes-kanban-run-outcome {
+.scarlight-kanban-run-outcome {
   font-family: var(--font-mono, ui-monospace, monospace);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: var(--color-foreground);
 }
-.hermes-kanban-run-profile {
+.scarlight-kanban-run-profile {
   color: var(--color-muted-foreground);
 }
-.hermes-kanban-run-elapsed {
+.scarlight-kanban-run-elapsed {
   font-variant-numeric: tabular-nums;
   color: var(--color-muted-foreground);
 }
-.hermes-kanban-run-ago {
+.scarlight-kanban-run-ago {
   margin-left: auto;
   color: var(--color-muted-foreground);
 }
-.hermes-kanban-run-summary {
+.scarlight-kanban-run-summary {
   font-size: 0.82rem;
   line-height: 1.5;
   padding: 0.2rem 0 0;
   color: var(--color-foreground);
 }
-.hermes-kanban-run-error {
+.scarlight-kanban-run-error {
   font-size: 0.7rem;
   color: var(--color-destructive, #d14a4a);
   padding: 0.15rem 0 0;
@@ -895,30 +895,30 @@
  * Uses a native <details>/<summary> pair so collapse is browser-handled
  * (zero JS); large blobs default collapsed via the open=false attribute.
  * See issue #19548. */
-.hermes-kanban-run-meta-block {
+.scarlight-kanban-run-meta-block {
   margin-top: 0.4rem;
   padding: 0.25rem 0.5rem;
   border-left: 2px solid var(--color-border);
   background: transparent;
 }
-.hermes-kanban-run-meta-block > summary.hermes-kanban-run-meta-label {
+.scarlight-kanban-run-meta-block > summary.scarlight-kanban-run-meta-label {
   cursor: pointer;
   list-style: none;
 }
-.hermes-kanban-run-meta-block > summary.hermes-kanban-run-meta-label::-webkit-details-marker {
+.scarlight-kanban-run-meta-block > summary.scarlight-kanban-run-meta-label::-webkit-details-marker {
   display: none;
 }
-.hermes-kanban-run-meta-block > summary.hermes-kanban-run-meta-label::before {
+.scarlight-kanban-run-meta-block > summary.scarlight-kanban-run-meta-label::before {
   content: "▶ ";
   display: inline-block;
   font-size: 0.6rem;
   margin-right: 0.25rem;
   transition: transform 120ms ease;
 }
-.hermes-kanban-run-meta-block[open] > summary.hermes-kanban-run-meta-label::before {
+.scarlight-kanban-run-meta-block[open] > summary.scarlight-kanban-run-meta-label::before {
   transform: rotate(90deg);
 }
-.hermes-kanban-run-meta-label {
+.scarlight-kanban-run-meta-label {
   font-size: 0.65rem;
   font-weight: 600;
   text-transform: uppercase;
@@ -926,7 +926,7 @@
   color: var(--color-muted-foreground);
   padding-bottom: 0.15rem;
 }
-.hermes-kanban-run-meta {
+.scarlight-kanban-run-meta {
   display: block;
   max-height: 8.5rem;
   overflow: auto;
@@ -943,26 +943,26 @@
 /* -------------------------------------------------------------------------
    Multi-project: board switcher + create-board dialog
    ------------------------------------------------------------------------- */
-.hermes-kanban-boardswitcher {
+.scarlight-kanban-boardswitcher {
   border: 1px solid var(--color-border, rgba(120, 120, 140, 0.25));
   border-radius: 0.5rem;
   padding: 0.6rem 0.85rem;
   background: var(--color-card-subtle, rgba(255, 255, 255, 0.02));
 }
-.hermes-kanban-boardswitcher-inner {
+.scarlight-kanban-boardswitcher-inner {
   display: flex;
   align-items: flex-end;
   gap: 0.75rem;
   flex-wrap: wrap;
 }
-.hermes-kanban-boardswitcher-compact {
+.scarlight-kanban-boardswitcher-compact {
   display: flex;
   justify-content: flex-end;
   padding: 0 0.25rem;
   gap: 0.5rem;
   align-items: center;
 }
-.hermes-kanban-docs-link {
+.scarlight-kanban-docs-link {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -979,14 +979,14 @@
   cursor: help;
   transition: color 0.15s, background 0.15s, border-color 0.15s;
 }
-.hermes-kanban-docs-link:hover,
-.hermes-kanban-docs-link:focus-visible {
+.scarlight-kanban-docs-link:hover,
+.scarlight-kanban-docs-link:focus-visible {
   color: var(--color-foreground, #e7e7ee);
   background: var(--color-card, rgba(255, 255, 255, 0.08));
   border-color: var(--color-border, rgba(160, 160, 190, 0.45));
   outline: none;
 }
-.hermes-kanban-dialog-backdrop {
+.scarlight-kanban-dialog-backdrop {
   position: fixed;
   inset: 0;
   background: rgba(8, 10, 16, 0.55);
@@ -996,7 +996,7 @@
   align-items: center;
   justify-content: center;
 }
-.hermes-kanban-dialog {
+.scarlight-kanban-dialog {
   background: var(--color-card, #121421);
   color: var(--color-foreground);
   border: 1px solid var(--color-border, rgba(120, 120, 140, 0.25));
@@ -1008,12 +1008,12 @@
   overflow: auto;
   box-shadow: 0 18px 40px rgba(0, 0, 0, 0.5);
 }
-.hermes-kanban-dialog-title {
+.scarlight-kanban-dialog-title {
   font-size: 1rem;
   font-weight: 600;
   margin-bottom: 0.25rem;
 }
-.hermes-kanban-dialog-actions {
+.scarlight-kanban-dialog-actions {
   display: flex;
   justify-content: flex-end;
   gap: 0.5rem;
@@ -1025,7 +1025,7 @@
 /* strip, recovery popover. Orange/red palette but muted so the board     */
 /* doesn't scream on every render.                                        */
 /* ---------------------------------------------------------------------- */
-.hermes-kanban-warning-badge {
+.scarlight-kanban-warning-badge {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1036,24 +1036,24 @@
 }
 
 /* Attention strip — collapsed state is a thin bar. */
-.hermes-kanban-attention {
+.scarlight-kanban-attention {
   border: 1px solid rgba(255, 158, 59, 0.35);
   background: rgba(255, 158, 59, 0.06);
   border-radius: 0.5rem;
   overflow: hidden;
 }
-.hermes-kanban-attention-bar {
+.scarlight-kanban-attention-bar {
   display: flex;
   align-items: center;
   gap: 0.5rem;
   padding: 0.4rem 0.75rem;
   font-size: 0.8125rem;
 }
-.hermes-kanban-attention-icon { color: #ff9e3b; font-size: 1rem; }
-.hermes-kanban-attention-text { flex: 1; }
-.hermes-kanban-attention-toggle,
-.hermes-kanban-attention-dismiss,
-.hermes-kanban-attention-row-btn {
+.scarlight-kanban-attention-icon { color: #ff9e3b; font-size: 1rem; }
+.scarlight-kanban-attention-text { flex: 1; }
+.scarlight-kanban-attention-toggle,
+.scarlight-kanban-attention-dismiss,
+.scarlight-kanban-attention-row-btn {
   background: transparent;
   border: 1px solid rgba(120, 120, 140, 0.3);
   border-radius: 0.3rem;
@@ -1062,63 +1062,63 @@
   color: inherit;
   cursor: pointer;
 }
-.hermes-kanban-attention-toggle:hover,
-.hermes-kanban-attention-dismiss:hover,
-.hermes-kanban-attention-row-btn:hover {
+.scarlight-kanban-attention-toggle:hover,
+.scarlight-kanban-attention-dismiss:hover,
+.scarlight-kanban-attention-row-btn:hover {
   background: rgba(255, 158, 59, 0.12);
 }
-.hermes-kanban-attention-list {
+.scarlight-kanban-attention-list {
   border-top: 1px solid rgba(255, 158, 59, 0.2);
   padding: 0.25rem 0;
 }
-.hermes-kanban-attention-row {
+.scarlight-kanban-attention-row {
   display: flex;
   align-items: center;
   gap: 0.5rem;
   padding: 0.3rem 0.75rem;
   font-size: 0.8125rem;
 }
-.hermes-kanban-attention-row:hover {
+.scarlight-kanban-attention-row:hover {
   background: rgba(255, 158, 59, 0.08);
 }
-.hermes-kanban-attention-row-id {
+.scarlight-kanban-attention-row-id {
   font-family: ui-monospace, SFMono-Regular, monospace;
   font-size: 0.75rem;
   color: var(--color-muted-foreground, #888);
   min-width: 7rem;
 }
-.hermes-kanban-attention-row-title {
+.scarlight-kanban-attention-row-title {
   flex: 1;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.hermes-kanban-attention-row-meta {
+.scarlight-kanban-attention-row-meta {
   font-size: 0.75rem;
   color: var(--color-muted-foreground, #888);
 }
 
 /* Events tab — callout style for hallucination events. */
-.hermes-kanban-event--hallucination {
+.scarlight-kanban-event--hallucination {
   border-left: 3px solid #ff6b6b;
   background: rgba(255, 107, 107, 0.08);
   padding: 0.5rem 0.65rem;
   border-radius: 0.35rem;
   margin: 0.25rem 0;
 }
-.hermes-kanban-event-header,
-.hermes-kanban-event-header-plain {
+.scarlight-kanban-event-header,
+.scarlight-kanban-event-header-plain {
   display: flex;
   align-items: center;
   gap: 0.5rem;
 }
-.hermes-kanban-event-warning-icon { color: #ff6b6b; font-size: 1rem; }
-.hermes-kanban-event-warning-label {
+.scarlight-kanban-event-warning-icon { color: #ff6b6b; font-size: 1rem; }
+.scarlight-kanban-event-warning-label {
   color: #ff6b6b;
   font-weight: 600;
   font-size: 0.8125rem;
 }
-.hermes-kanban-event-phantom-row {
+.scarlight-kanban-event-phantom-row {
   display: flex;
   align-items: center;
   gap: 0.4rem;
@@ -1126,11 +1126,11 @@
   margin-top: 0.3rem;
   padding-left: 1.35rem;
 }
-.hermes-kanban-event-phantom-label {
+.scarlight-kanban-event-phantom-label {
   font-size: 0.75rem;
   color: var(--color-muted-foreground, #999);
 }
-.hermes-kanban-event-phantom-chip {
+.scarlight-kanban-event-phantom-chip {
   font-family: ui-monospace, SFMono-Regular, monospace;
   font-size: 0.75rem;
   padding: 0.1rem 0.4rem;
@@ -1140,14 +1140,14 @@
 }
 
 /* Recovery section header — amber accent when the task has warnings. */
-.hermes-kanban-section-head-warning { color: #ff9e3b; }
-.hermes-kanban-section-head-row {
+.scarlight-kanban-section-head-warning { color: #ff9e3b; }
+.scarlight-kanban-section-head-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 0.5rem;
 }
-.hermes-kanban-section-toggle {
+.scarlight-kanban-section-toggle {
   background: transparent;
   border: 1px solid rgba(120, 120, 140, 0.3);
   border-radius: 0.3rem;
@@ -1158,7 +1158,7 @@
 }
 
 /* Recovery popover body. */
-.hermes-kanban-recovery {
+.scarlight-kanban-recovery {
   border: 1px solid rgba(120, 120, 140, 0.25);
   background: rgba(255, 158, 59, 0.04);
   border-radius: 0.5rem;
@@ -1167,26 +1167,26 @@
   flex-direction: column;
   gap: 0.75rem;
 }
-.hermes-kanban-recovery-title {
+.scarlight-kanban-recovery-title {
   font-weight: 600;
   font-size: 0.8125rem;
 }
-.hermes-kanban-recovery-hint {
+.scarlight-kanban-recovery-hint {
   font-size: 0.75rem;
   color: var(--color-muted-foreground, #888);
   line-height: 1.35;
 }
-.hermes-kanban-recovery-section {
+.scarlight-kanban-recovery-section {
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
 }
-.hermes-kanban-recovery-label {
+.scarlight-kanban-recovery-label {
   font-size: 0.75rem;
   color: var(--color-muted-foreground, #888);
 }
-.hermes-kanban-recovery-input,
-.hermes-kanban-recovery-select {
+.scarlight-kanban-recovery-input,
+.scarlight-kanban-recovery-select {
   padding: 0.25rem 0.4rem;
   font-size: 0.8125rem;
   background: rgba(0, 0, 0, 0.15);
@@ -1195,23 +1195,23 @@
   color: inherit;
   outline: none;
 }
-.hermes-kanban-recovery-action-row {
+.scarlight-kanban-recovery-action-row {
   display: flex;
   align-items: center;
   gap: 0.5rem;
   flex-wrap: wrap;
 }
-.hermes-kanban-recovery-action-label {
+.scarlight-kanban-recovery-action-label {
   font-size: 0.8125rem;
   font-weight: 600;
   min-width: 8rem;
 }
-.hermes-kanban-recovery-action-desc {
+.scarlight-kanban-recovery-action-desc {
   flex: 1;
   font-size: 0.75rem;
   color: var(--color-muted-foreground, #888);
 }
-.hermes-kanban-recovery-btn {
+.scarlight-kanban-recovery-btn {
   padding: 0.25rem 0.7rem;
   font-size: 0.75rem;
   background: rgba(255, 158, 59, 0.15);
@@ -1220,32 +1220,32 @@
   color: inherit;
   cursor: pointer;
 }
-.hermes-kanban-recovery-btn:hover:not(:disabled) {
+.scarlight-kanban-recovery-btn:hover:not(:disabled) {
   background: rgba(255, 158, 59, 0.25);
 }
-.hermes-kanban-recovery-btn:disabled {
+.scarlight-kanban-recovery-btn:disabled {
   opacity: 0.4;
   cursor: not-allowed;
 }
-.hermes-kanban-recovery-reassign-row {
+.scarlight-kanban-recovery-reassign-row {
   display: flex;
   align-items: center;
   gap: 0.5rem;
   flex-wrap: wrap;
 }
-.hermes-kanban-recovery-checkbox {
+.scarlight-kanban-recovery-checkbox {
   font-size: 0.75rem;
   display: inline-flex;
   align-items: center;
   gap: 0.25rem;
 }
-.hermes-kanban-recovery-cmd-row {
+.scarlight-kanban-recovery-cmd-row {
   display: flex;
   align-items: center;
   gap: 0.5rem;
   flex-wrap: wrap;
 }
-.hermes-kanban-recovery-cmd {
+.scarlight-kanban-recovery-cmd {
   font-family: ui-monospace, SFMono-Regular, monospace;
   font-size: 0.75rem;
   padding: 0.2rem 0.5rem;
@@ -1257,17 +1257,17 @@
   overflow-x: auto;
   white-space: nowrap;
 }
-.hermes-kanban-recovery-msg {
+.scarlight-kanban-recovery-msg {
   font-size: 0.75rem;
   padding: 0.35rem 0.5rem;
   border-radius: 0.3rem;
 }
-.hermes-kanban-recovery-msg--ok {
+.scarlight-kanban-recovery-msg--ok {
   background: rgba(120, 200, 120, 0.12);
   color: #6bc46b;
   border: 1px solid rgba(120, 200, 120, 0.3);
 }
-.hermes-kanban-recovery-msg--err {
+.scarlight-kanban-recovery-msg--err {
   background: rgba(255, 107, 107, 0.12);
   color: #ff8b8b;
   border: 1px solid rgba(255, 107, 107, 0.3);
@@ -1280,53 +1280,53 @@
 
 /* Severity token variables so every diagnostic-coloured surface uses the */
 /* same palette. */
-.hermes-kanban-diag,
-.hermes-kanban-attention,
-.hermes-kanban-warning-badge,
-.hermes-kanban-attention-row {
+.scarlight-kanban-diag,
+.scarlight-kanban-attention,
+.scarlight-kanban-warning-badge,
+.scarlight-kanban-attention-row {
   --hermes-diag-warning: #ff9e3b;
   --hermes-diag-error:   #ff6b3d;
   --hermes-diag-critical: #ff4d4d;
 }
 
 /* Warning-badge severity variants (overrides the base colour). */
-.hermes-kanban-warning-badge--warning { color: var(--hermes-diag-warning); }
-.hermes-kanban-warning-badge--error   { color: var(--hermes-diag-error); font-weight: 700; }
-.hermes-kanban-warning-badge--critical { color: var(--hermes-diag-critical); font-weight: 700; }
+.scarlight-kanban-warning-badge--warning { color: var(--hermes-diag-warning); }
+.scarlight-kanban-warning-badge--error   { color: var(--hermes-diag-error); font-weight: 700; }
+.scarlight-kanban-warning-badge--critical { color: var(--hermes-diag-critical); font-weight: 700; }
 
 /* Attention-strip severity variants. */
-.hermes-kanban-attention--warning {
+.scarlight-kanban-attention--warning {
   border-color: rgba(255, 158, 59, 0.35);
   background: rgba(255, 158, 59, 0.06);
 }
-.hermes-kanban-attention--error {
+.scarlight-kanban-attention--error {
   border-color: rgba(255, 107, 61, 0.45);
   background: rgba(255, 107, 61, 0.08);
 }
-.hermes-kanban-attention--critical {
+.scarlight-kanban-attention--critical {
   border-color: rgba(255, 77, 77, 0.55);
   background: rgba(255, 77, 77, 0.10);
 }
-.hermes-kanban-attention--error .hermes-kanban-attention-icon { color: var(--hermes-diag-error); }
-.hermes-kanban-attention--critical .hermes-kanban-attention-icon { color: var(--hermes-diag-critical); }
+.scarlight-kanban-attention--error .scarlight-kanban-attention-icon { color: var(--hermes-diag-error); }
+.scarlight-kanban-attention--critical .scarlight-kanban-attention-icon { color: var(--hermes-diag-critical); }
 
 /* Per-row severity marker in the expanded attention list. */
-.hermes-kanban-attention-row-sev {
+.scarlight-kanban-attention-row-sev {
   display: inline-block;
   min-width: 1.5rem;
   font-weight: 600;
 }
-.hermes-kanban-attention-row--warning .hermes-kanban-attention-row-sev { color: var(--hermes-diag-warning); }
-.hermes-kanban-attention-row--error    .hermes-kanban-attention-row-sev { color: var(--hermes-diag-error); font-weight: 700; }
-.hermes-kanban-attention-row--critical .hermes-kanban-attention-row-sev { color: var(--hermes-diag-critical); font-weight: 700; }
+.scarlight-kanban-attention-row--warning .scarlight-kanban-attention-row-sev { color: var(--hermes-diag-warning); }
+.scarlight-kanban-attention-row--error    .scarlight-kanban-attention-row-sev { color: var(--hermes-diag-error); font-weight: 700; }
+.scarlight-kanban-attention-row--critical .scarlight-kanban-attention-row-sev { color: var(--hermes-diag-critical); font-weight: 700; }
 
 /* Individual diagnostic card inside the drawer's Diagnostics section. */
-.hermes-kanban-diag-list {
+.scarlight-kanban-diag-list {
   display: flex;
   flex-direction: column;
   gap: 0.6rem;
 }
-.hermes-kanban-diag {
+.scarlight-kanban-diag {
   border-left: 3px solid var(--hermes-diag-warning);
   background: rgba(255, 158, 59, 0.05);
   border-radius: 0.35rem;
@@ -1335,70 +1335,70 @@
   flex-direction: column;
   gap: 0.4rem;
 }
-.hermes-kanban-diag--error {
+.scarlight-kanban-diag--error {
   border-left-color: var(--hermes-diag-error);
   background: rgba(255, 107, 61, 0.06);
 }
-.hermes-kanban-diag--critical {
+.scarlight-kanban-diag--critical {
   border-left-color: var(--hermes-diag-critical);
   background: rgba(255, 77, 77, 0.07);
 }
-.hermes-kanban-diag-header {
+.scarlight-kanban-diag-header {
   display: flex;
   align-items: center;
   gap: 0.5rem;
 }
-.hermes-kanban-diag-sev {
+.scarlight-kanban-diag-sev {
   font-weight: 700;
   min-width: 1.5rem;
 }
-.hermes-kanban-diag--warning .hermes-kanban-diag-sev { color: var(--hermes-diag-warning); }
-.hermes-kanban-diag--error    .hermes-kanban-diag-sev { color: var(--hermes-diag-error); }
-.hermes-kanban-diag--critical .hermes-kanban-diag-sev { color: var(--hermes-diag-critical); }
-.hermes-kanban-diag-title {
+.scarlight-kanban-diag--warning .scarlight-kanban-diag-sev { color: var(--hermes-diag-warning); }
+.scarlight-kanban-diag--error    .scarlight-kanban-diag-sev { color: var(--hermes-diag-error); }
+.scarlight-kanban-diag--critical .scarlight-kanban-diag-sev { color: var(--hermes-diag-critical); }
+.scarlight-kanban-diag-title {
   font-weight: 600;
   font-size: 0.875rem;
 }
-.hermes-kanban-diag-detail {
+.scarlight-kanban-diag-detail {
   font-size: 0.8125rem;
   color: var(--color-foreground, #ccc);
   line-height: 1.4;
 }
-.hermes-kanban-diag-data {
+.scarlight-kanban-diag-data {
   display: flex;
   flex-direction: column;
   gap: 0.2rem;
   font-size: 0.75rem;
 }
-.hermes-kanban-diag-data-row {
+.scarlight-kanban-diag-data-row {
   display: flex;
   align-items: center;
   gap: 0.35rem;
   flex-wrap: wrap;
 }
-.hermes-kanban-diag-data-key {
+.scarlight-kanban-diag-data-key {
   color: var(--color-muted-foreground, #888);
   font-weight: 500;
 }
-.hermes-kanban-diag-data-val {
+.scarlight-kanban-diag-data-val {
   font-family: ui-monospace, SFMono-Regular, monospace;
 }
-.hermes-kanban-diag-reassign-row {
+.scarlight-kanban-diag-reassign-row {
   display: flex;
   align-items: center;
   gap: 0.4rem;
   font-size: 0.75rem;
 }
-.hermes-kanban-diag-reassign-label {
+.scarlight-kanban-diag-reassign-label {
   color: var(--color-muted-foreground, #888);
 }
-.hermes-kanban-diag-actions {
+.scarlight-kanban-diag-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 0.4rem;
   margin-top: 0.1rem;
 }
-.hermes-kanban-diag-action-btn {
+.scarlight-kanban-diag-action-btn {
   padding: 0.25rem 0.6rem;
   font-size: 0.75rem;
   background: rgba(0, 0, 0, 0.2);
@@ -1408,48 +1408,48 @@
   cursor: pointer;
   text-decoration: none;
 }
-.hermes-kanban-diag-action-btn:hover:not(:disabled) {
+.scarlight-kanban-diag-action-btn:hover:not(:disabled) {
   background: rgba(0, 0, 0, 0.3);
 }
-.hermes-kanban-diag-action-btn:disabled {
+.scarlight-kanban-diag-action-btn:disabled {
   opacity: 0.4;
   cursor: not-allowed;
 }
-.hermes-kanban-diag-action-btn--suggested {
+.scarlight-kanban-diag-action-btn--suggested {
   background: rgba(255, 158, 59, 0.15);
   border-color: rgba(255, 158, 59, 0.4);
   font-weight: 600;
 }
-.hermes-kanban-diag-action-btn--suggested:hover:not(:disabled) {
+.scarlight-kanban-diag-action-btn--suggested:hover:not(:disabled) {
   background: rgba(255, 158, 59, 0.25);
 }
-.hermes-kanban-diag-action-btn--unknown {
+.scarlight-kanban-diag-action-btn--unknown {
   opacity: 0.6;
   cursor: default;
 }
-.hermes-kanban-diag-msg {
+.scarlight-kanban-diag-msg {
   font-size: 0.75rem;
   padding: 0.35rem 0.5rem;
   border-radius: 0.3rem;
 }
-.hermes-kanban-diag-msg--ok {
+.scarlight-kanban-diag-msg--ok {
   background: rgba(120, 200, 120, 0.12);
   color: #6bc46b;
   border: 1px solid rgba(120, 200, 120, 0.3);
 }
-.hermes-kanban-diag-msg--err {
+.scarlight-kanban-diag-msg--err {
   background: rgba(255, 107, 61, 0.12);
   color: #ff8b6b;
   border: 1px solid rgba(255, 107, 61, 0.3);
 }
 /* ---- Partial failure highlight --------------------------------------- */
-.hermes-kanban-card--failed :where(.hermes-kanban-card-content) {
+.scarlight-kanban-card--failed :where(.scarlight-kanban-card-content) {
   box-shadow: 0 0 0 2px var(--color-destructive, #d14a4a) inset,
               0 0 8px color-mix(in srgb, var(--color-destructive, #d14a4a) 30%, transparent);
 }
 
 /* ---- Larger checkbox hit target -------------------------------------- */
-.hermes-kanban-card-check-wrap {
+.scarlight-kanban-card-check-wrap {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1458,7 +1458,7 @@
   margin: -0.3rem;
   cursor: pointer;
 }
-.hermes-kanban-card-check {
+.scarlight-kanban-card-check {
   width: 0.95rem;
   height: 0.95rem;
   margin: 0;
@@ -1467,7 +1467,7 @@
 }
 
 /* ---- Column select-all checkbox -------------------------------------- */
-.hermes-kanban-col-check {
+.scarlight-kanban-col-check {
   width: 0.9rem;
   height: 0.9rem;
   margin: 0 0.15rem 0 0;
@@ -1476,14 +1476,14 @@
 }
 
 /* ---- Bulk action bar extras ------------------------------------------ */
-.hermes-kanban-bulk-priority {
+.scarlight-kanban-bulk-priority {
   display: flex;
   align-items: center;
   gap: 0.25rem;
   padding-left: 0.5rem;
   border-left: 1px solid color-mix(in srgb, var(--color-border) 70%, transparent);
 }
-.hermes-kanban-bulk-reclaim-first {
+.scarlight-kanban-bulk-reclaim-first {
   display: inline-flex;
   align-items: center;
   gap: 0.25rem;

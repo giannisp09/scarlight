@@ -878,7 +878,7 @@ class DingTalkAdapter(BasePlatformAdapter):
 
         payload = {
             "msgtype": "markdown",
-            "markdown": {"title": "Hermes", "text": normalized},
+            "markdown": {"title": "Scarlight", "text": normalized},
         }
 
         try:
@@ -1015,7 +1015,7 @@ class DingTalkAdapter(BasePlatformAdapter):
             if not token:
                 return None
 
-            out_track_id = f"hermes_{uuid.uuid4().hex[:12]}"
+            out_track_id = f"scarlight_{uuid.uuid4().hex[:12]}"
 
             conversation_id = getattr(message, "conversation_id", "") or ""
             conversation_type = getattr(message, "conversation_type", "1")

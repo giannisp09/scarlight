@@ -1,16 +1,16 @@
 """Kanban tools — structured tool-call surface for worker + orchestrator agents.
 
 These tools are only registered into the model's schema when the agent is
-running under the dispatcher (env var ``HERMES_KANBAN_TASK`` set). A
-normal ``hermes chat`` session sees **zero** kanban tools in its schema.
+running under the dispatcher (env var ``SCARLIGHT_KANBAN_TASK`` set). A
+normal ``scarlight chat`` session sees **zero** kanban tools in its schema.
 
-Why tools instead of just shelling out to ``hermes kanban``?
+Why tools instead of just shelling out to ``scarlight kanban``?
 
 1. **Backend portability.** A worker whose terminal tool points at Docker
-   / Modal / Singularity / SSH would run ``hermes kanban complete …``
-   inside the container, where ``hermes`` isn't installed and the DB
+   / Modal / Singularity / SSH would run ``scarlight kanban complete …``
+   inside the container, where ``scarlight`` isn't installed and the DB
    isn't mounted. Tools run in the agent's Python process, so they
-   always reach ``~/.hermes/kanban.db`` regardless of terminal backend.
+   always reach ``~/.scarlight/kanban.db`` regardless of terminal backend.
 
 2. **No shell-quoting footguns.** Passing ``--metadata '{"x": [...]}'``
    through shlex+argparse is fragile. Structured tool args skip it.
@@ -18,8 +18,8 @@ Why tools instead of just shelling out to ``hermes kanban``?
 3. **Better errors.** Tool-call failures return structured JSON the
    model can reason about, not stderr strings it has to parse.
 
-Humans continue to use the CLI (``hermes kanban …``), the dashboard
-(``hermes dashboard``), and the slash command (``/kanban …``) — all
+Humans continue to use the CLI (``scarlight kanban …``), the dashboard
+(``scarlight dashboard``), and the slash command (``/kanban …``) — all
 three bypass the agent entirely. The tools are ONLY for the worker
 agent's handoff back to the kernel.
 """
@@ -48,7 +48,7 @@ def _profile_has_kanban_toolset() -> bool:
     # negligible overhead. The check_fn results are further TTL-cached
     # (~30s) by the tool registry.
     try:
-        from hermes_cli.config import load_config
+        from scarlight_cli.config import load_config
         cfg = load_config()
         toolsets = cfg.get("toolsets", [])
         return "kanban" in toolsets
@@ -59,16 +59,16 @@ def _profile_has_kanban_toolset() -> bool:
 def _check_kanban_mode() -> bool:
     """Task-lifecycle tools are available when:
 
-    1. ``HERMES_KANBAN_TASK`` is set (dispatcher-spawned worker), OR
+    1. ``SCARLIGHT_KANBAN_TASK`` is set (dispatcher-spawned worker), OR
     2. The current profile has ``kanban`` in its toolsets config
        (orchestrator profiles like techlead that route work via Kanban).
 
-    Humans running ``hermes chat`` without the kanban toolset see zero
+    Humans running ``scarlight chat`` without the kanban toolset see zero
     kanban tools. Workers spawned by the kanban dispatcher (gateway-
     embedded by default) and orchestrator profiles with the kanban
     toolset enabled see the Kanban lifecycle tool surface.
     """
-    if os.environ.get("HERMES_KANBAN_TASK"):
+    if os.environ.get("SCARLIGHT_KANBAN_TASK"):
         return True
     return _profile_has_kanban_toolset()
 
@@ -82,7 +82,7 @@ def _check_kanban_orchestrator_mode() -> bool:
     board state. Profiles that explicitly opt into the kanban toolset
     and are NOT scoped to a single task are the orchestrator surface.
     """
-    if os.environ.get("HERMES_KANBAN_TASK"):
+    if os.environ.get("SCARLIGHT_KANBAN_TASK"):
         return False
     return _profile_has_kanban_toolset()
 
@@ -95,15 +95,15 @@ def _default_task_id(arg: Optional[str]) -> Optional[str]:
     """Resolve ``task_id`` arg or fall back to the env var the dispatcher set."""
     if arg:
         return arg
-    env_tid = os.environ.get("HERMES_KANBAN_TASK")
+    env_tid = os.environ.get("SCARLIGHT_KANBAN_TASK")
     return env_tid or None
 
 
 def _worker_run_id(task_id: str) -> Optional[int]:
     """Return this worker's dispatcher run id when it is scoped to task_id."""
-    if os.environ.get("HERMES_KANBAN_TASK") != task_id:
+    if os.environ.get("SCARLIGHT_KANBAN_TASK") != task_id:
         return None
-    raw = os.environ.get("HERMES_KANBAN_RUN_ID")
+    raw = os.environ.get("SCARLIGHT_KANBAN_RUN_ID")
     if not raw:
         return None
     try:
@@ -115,14 +115,14 @@ def _worker_run_id(task_id: str) -> Optional[int]:
 def _enforce_worker_task_ownership(tid: str) -> Optional[str]:
     """Reject worker-driven destructive calls on foreign task IDs.
 
-    A process spawned by the dispatcher has ``HERMES_KANBAN_TASK`` set
+    A process spawned by the dispatcher has ``SCARLIGHT_KANBAN_TASK`` set
     to its own task id. Tools like ``kanban_complete`` / ``kanban_block``
     / ``kanban_heartbeat`` mutate run-lifecycle state, so a buggy or
     prompt-injected worker that passed an explicit ``task_id`` for some
     other task could corrupt sibling or cross-tenant runs (see #19534).
 
     Orchestrator profiles (kanban toolset enabled but **no**
-    ``HERMES_KANBAN_TASK`` in env) aren't subject to this check — their
+    ``SCARLIGHT_KANBAN_TASK`` in env) aren't subject to this check — their
     job is routing, and they sometimes legitimately close out child
     tasks or reopen blocked ones. Workers are narrowly scoped to their
     one task.
@@ -131,7 +131,7 @@ def _enforce_worker_task_ownership(tid: str) -> Optional[str]:
     when it must be rejected. Callers should ``return`` the error
     verbatim.
     """
-    env_tid = os.environ.get("HERMES_KANBAN_TASK")
+    env_tid = os.environ.get("SCARLIGHT_KANBAN_TASK")
     if not env_tid:
         # Orchestrator or CLI context — no task-scope restriction.
         return None
@@ -147,7 +147,7 @@ def _enforce_worker_task_ownership(tid: str) -> Optional[str]:
 def _connect():
     """Import + connect lazily so the module imports cleanly in non-kanban
     contexts (e.g. test rigs that import every tool module)."""
-    from hermes_cli import kanban_db as kb
+    from scarlight_cli import kanban_db as kb
     return kb, kb.connect()
 
 
@@ -188,7 +188,7 @@ def _require_orchestrator_tool(tool_name: str) -> Optional[str]:
     structured tool_error so the model gets a clear refusal instead of
     silently mutating board state from a worker context.
     """
-    if os.environ.get("HERMES_KANBAN_TASK"):
+    if os.environ.get("SCARLIGHT_KANBAN_TASK"):
         return tool_error(
             f"{tool_name} is orchestrator-only; dispatcher-spawned workers "
             "must use kanban_complete, kanban_block, kanban_heartbeat, or "
@@ -232,7 +232,7 @@ def _handle_show(args: dict, **kw) -> str:
     tid = _default_task_id(args.get("task_id"))
     if not tid:
         return tool_error(
-            "task_id is required (or set HERMES_KANBAN_TASK in the env)"
+            "task_id is required (or set SCARLIGHT_KANBAN_TASK in the env)"
         )
     try:
         kb, conn = _connect()
@@ -362,7 +362,7 @@ def _handle_complete(args: dict, **kw) -> str:
     tid = _default_task_id(args.get("task_id"))
     if not tid:
         return tool_error(
-            "task_id is required (or set HERMES_KANBAN_TASK in the env)"
+            "task_id is required (or set SCARLIGHT_KANBAN_TASK in the env)"
         )
     ownership_err = _enforce_worker_task_ownership(tid)
     if ownership_err:
@@ -440,7 +440,7 @@ def _handle_block(args: dict, **kw) -> str:
     tid = _default_task_id(args.get("task_id"))
     if not tid:
         return tool_error(
-            "task_id is required (or set HERMES_KANBAN_TASK in the env)"
+            "task_id is required (or set SCARLIGHT_KANBAN_TASK in the env)"
         )
     ownership_err = _enforce_worker_task_ownership(tid)
     if ownership_err:
@@ -483,7 +483,7 @@ def _handle_heartbeat(args: dict, **kw) -> str:
     tid = _default_task_id(args.get("task_id"))
     if not tid:
         return tool_error(
-            "task_id is required (or set HERMES_KANBAN_TASK in the env)"
+            "task_id is required (or set SCARLIGHT_KANBAN_TASK in the env)"
         )
     ownership_err = _enforce_worker_task_ownership(tid)
     if ownership_err:
@@ -493,11 +493,11 @@ def _handle_heartbeat(args: dict, **kw) -> str:
         kb, conn = _connect()
         try:
             # Extend the claim TTL first. The dispatcher pins
-            # HERMES_KANBAN_CLAIM_LOCK in the worker env at spawn time
+            # SCARLIGHT_KANBAN_CLAIM_LOCK in the worker env at spawn time
             # (see _default_spawn in kanban_db.py); falling back to the
             # default _claimer_id() covers locally-driven workers that
             # never went through the dispatcher path.
-            claim_lock = os.environ.get("HERMES_KANBAN_CLAIM_LOCK")
+            claim_lock = os.environ.get("SCARLIGHT_KANBAN_CLAIM_LOCK")
             kb.heartbeat_claim(conn, tid, claimer=claim_lock)
 
             ok = kb.heartbeat_worker(
@@ -534,11 +534,11 @@ def _handle_comment(args: dict, **kw) -> str:
     # into the next worker's system prompt by ``build_worker_context``
     # as ``**{author}** (timestamp): {body}`` — accepting an
     # ``args["author"]`` override let a worker forge a comment from
-    # an authoritative-looking name like ``hermes-system`` and poison
+    # an authoritative-looking name like ``scarlight-system`` and poison
     # the future-worker context with what reads as a system directive.
     # Cross-task commenting itself remains unrestricted (see #19713) —
     # comments are the deliberate handoff channel between tasks.
-    author = os.environ.get("HERMES_PROFILE") or "worker"
+    author = os.environ.get("SCARLIGHT_PROFILE") or "worker"
     try:
         kb, conn = _connect()
         try:
@@ -568,7 +568,7 @@ def _handle_create(args: dict, **kw) -> str:
         )
     body = args.get("body")
     parents = args.get("parents") or []
-    tenant = args.get("tenant") or os.environ.get("HERMES_TENANT")
+    tenant = args.get("tenant") or os.environ.get("SCARLIGHT_TENANT")
     priority = args.get("priority")
     workspace_kind = args.get("workspace_kind") or "scratch"
     workspace_path = args.get("workspace_path")
@@ -611,7 +611,7 @@ def _handle_create(args: dict, **kw) -> str:
                     if max_runtime_seconds is not None else None
                 ),
                 skills=skills,
-                created_by=os.environ.get("HERMES_PROFILE") or "worker",
+                created_by=os.environ.get("SCARLIGHT_PROFILE") or "worker",
             )
             new_task = kb.get_task(conn, new_tid)
             return _ok(
@@ -678,7 +678,7 @@ def _handle_link(args: dict, **kw) -> str:
 # ---------------------------------------------------------------------------
 
 _DESC_TASK_ID_DEFAULT = (
-    "Task id. If omitted, defaults to HERMES_KANBAN_TASK from the env "
+    "Task id. If omitted, defaults to SCARLIGHT_KANBAN_TASK from the env "
     "(the task the dispatcher spawned you to work on)."
 )
 
@@ -948,7 +948,7 @@ KANBAN_CREATE_SCHEMA = {
                 "type": "string",
                 "description": (
                     "Optional namespace for multi-project isolation. "
-                    "Defaults to HERMES_TENANT env if set."
+                    "Defaults to SCARLIGHT_TENANT env if set."
                 ),
             },
             "priority": {

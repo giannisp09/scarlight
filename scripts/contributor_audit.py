@@ -44,7 +44,7 @@ IGNORED_PATTERNS = [
     re.compile(r"^GitHub\s*Actions?$", re.IGNORECASE),
     re.compile(r"^dependabot", re.IGNORECASE),
     re.compile(r"^renovate", re.IGNORECASE),
-    re.compile(r"^Hermes\s+(Agent|Audit)$", re.IGNORECASE),
+    re.compile(r"^Scarlight\s+(Agent|Audit)$", re.IGNORECASE),
     re.compile(r"^Ubuntu$", re.IGNORECASE),
 ]
 
@@ -52,9 +52,9 @@ IGNORED_EMAILS = {
     "noreply@anthropic.com",
     "noreply@github.com",
     "cursoragent@cursor.com",
-    "hermes@nousresearch.com",
-    "hermes-audit@example.com",
-    "hermes@habibilabs.dev",
+    "scarlight@nousresearch.com",
+    "scarlight-audit@example.com",
+    "scarlight@habibilabs.dev",
 }
 
 

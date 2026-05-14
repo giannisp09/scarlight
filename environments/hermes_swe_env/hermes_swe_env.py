@@ -1,5 +1,5 @@
 """
-HermesSweEnv -- SWE-Bench Style Environment with Modal Sandboxes
+ScarlightSweEnv -- SWE-Bench Style Environment with Modal Sandboxes
 
 A concrete environment for software engineering tasks where the model writes code
 and the reward function runs tests to verify correctness. Uses Modal terminal
@@ -47,19 +47,19 @@ from atroposlib.envs.server_handling.server_manager import APIServerConfig
 from atroposlib.type_definitions import Item
 
 from environments.agent_loop import AgentResult
-from environments.hermes_base_env import HermesAgentBaseEnv, HermesAgentEnvConfig
+from environments.hermes_base_env import ScarlightAgentBaseEnv, ScarlightAgentEnvConfig
 from environments.tool_context import ToolContext
 
 logger = logging.getLogger(__name__)
 
 
-class HermesSweEnvConfig(HermesAgentEnvConfig):
+class ScarlightSweEnvConfig(ScarlightAgentEnvConfig):
     """Config with defaults for SWE-bench style tasks."""
 
     pass  # Inherits all fields, overrides defaults in config_init
 
 
-class HermesSweEnv(HermesAgentBaseEnv):
+class ScarlightSweEnv(ScarlightAgentBaseEnv):
     """
     SWE-bench style environment using Modal terminal backend.
 
@@ -71,16 +71,16 @@ class HermesSweEnv(HermesAgentBaseEnv):
     """
 
     name = "hermes-swe"
-    env_config_cls = HermesSweEnvConfig
+    env_config_cls = ScarlightSweEnvConfig
 
     @classmethod
-    def config_init(cls) -> Tuple[HermesSweEnvConfig, List[APIServerConfig]]:
+    def config_init(cls) -> Tuple[ScarlightSweEnvConfig, List[APIServerConfig]]:
         """
         Default configuration for the SWE environment.
 
         Uses Modal terminal backend for cloud isolation and terminal + file + web toolsets.
         """
-        env_config = HermesSweEnvConfig(
+        env_config = ScarlightSweEnvConfig(
             # Toolsets: terminal for running code, file for reading/writing, web for docs
             enabled_toolsets=["terminal", "file", "web"],
             disabled_toolsets=None,
@@ -226,4 +226,4 @@ class HermesSweEnv(HermesAgentBaseEnv):
 
 
 if __name__ == "__main__":
-    HermesSweEnv.cli()
+    ScarlightSweEnv.cli()

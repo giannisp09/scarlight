@@ -17,7 +17,7 @@
         export HOME=$TMPDIR
         ${hermesVenv}/bin/python3 -c '
 import json, sys
-from hermes_cli.config import DEFAULT_CONFIG
+from scarlight_cli.config import DEFAULT_CONFIG
 
 def leaf_paths(d, prefix=""):
     paths = []
@@ -332,11 +332,11 @@ json.dump(sorted(leaf_paths(DEFAULT_CONFIG)), sys.stdout, indent=2)
           # Helper: run merge then load with Python, output merged JSON
           merge_and_load() {
             local hermes_home="$1"
-            export HERMES_HOME="$hermes_home"
+            export SCARLIGHT_HOME="$hermes_home"
             ${configMergeScript} ${nixSettings} "$hermes_home/config.yaml"
             ${hermesVenv}/bin/python3 -c '
 import json, sys
-from hermes_cli.config import load_config
+from scarlight_cli.config import load_config
 json.dump(load_config(), sys.stdout, default=str)
 '
           }

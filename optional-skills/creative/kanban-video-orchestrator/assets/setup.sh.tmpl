@@ -23,8 +23,8 @@ check_key() {
     local var="$1"
     local kc_account="${2:-hermes}"
     local kc_service="${3:-$1}"
-    if grep -q "^${var}=" "$HOME/.hermes/.env" 2>/dev/null && \
-       [ -n "$(grep "^${var}=" "$HOME/.hermes/.env" | cut -d= -f2-)" ]; then
+    if grep -q "^${var}=" "$HOME/.scarlight/.env" 2>/dev/null && \
+       [ -n "$(grep "^${var}=" "$HOME/.scarlight/.env" | cut -d= -f2-)" ]; then
         echo "  ✓ ${var} (env)"
         return 0
     fi
@@ -33,7 +33,7 @@ check_key() {
         echo "  ✓ ${var} (Keychain ${kc_account}/${kc_service})"
         return 0
     fi
-    echo "  ✗ ${var} not set in ~/.hermes/.env or Keychain (${kc_account}/${kc_service})"
+    echo "  ✗ ${var} not set in ~/.scarlight/.env or Keychain (${kc_account}/${kc_service})"
     return 1
 }
 
@@ -82,7 +82,7 @@ profile, toolsets_json, skills_json, workspace = sys.argv[1:5]
 toolsets = json.loads(toolsets_json)
 skills = json.loads(skills_json)
 
-p = os.path.expanduser(f"~/.hermes/profiles/{profile}/config.yaml")
+p = os.path.expanduser(f"~/.scarlight/profiles/{profile}/config.yaml")
 if not os.path.exists(p):
     print(f"  ✗ profile config not found: {p}", file=sys.stderr)
     sys.exit(1)

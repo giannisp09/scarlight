@@ -8,7 +8,7 @@ The 4 tools (profile, search, context, conclude) are exposed through
 the MemoryProvider interface.
 
 Config: Uses the existing Honcho config chain:
-  1. $HERMES_HOME/honcho.json (profile-scoped)
+  1. $SCARLIGHT_HOME/honcho.json (profile-scoped)
   2. ~/.honcho/config.json (legacy global)
   3. Environment variables
 """
@@ -247,7 +247,7 @@ class HonchoMemoryProvider(MemoryProvider):
             return False
 
     def save_config(self, values, hermes_home):
-        """Write config to $HERMES_HOME/honcho.json (Honcho SDK native format)."""
+        """Write config to $SCARLIGHT_HOME/honcho.json (Honcho SDK native format)."""
         import json
         from pathlib import Path
         config_path = Path(hermes_home) / "honcho.json"
@@ -387,8 +387,8 @@ class HonchoMemoryProvider(MemoryProvider):
         # of performing a one-time migration.
         try:
             if not session.messages and cfg.session_strategy != "per-session":
-                from hermes_constants import get_hermes_home
-                mem_dir = str(get_hermes_home() / "memories")
+                from scarlight_constants import get_scarlight_home
+                mem_dir = str(get_scarlight_home() / "memories")
                 self._manager.migrate_memory_files(self._session_key, mem_dir)
                 logger.debug("Honcho memory file migration attempted for new session: %s", self._session_key)
             elif cfg.session_strategy == "per-session":

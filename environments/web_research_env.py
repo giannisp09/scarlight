@@ -68,7 +68,7 @@ from atroposlib.envs.base import ScoredDataGroup
 from atroposlib.envs.server_handling.server_manager import APIServerConfig
 from atroposlib.type_definitions import Item
 
-from environments.hermes_base_env import HermesAgentBaseEnv, HermesAgentEnvConfig
+from environments.hermes_base_env import ScarlightAgentBaseEnv, ScarlightAgentEnvConfig
 from environments.agent_loop import AgentResult
 from environments.tool_context import ToolContext
 
@@ -146,7 +146,7 @@ SAMPLE_QUESTIONS = [
 # Configuration
 # ---------------------------------------------------------------------------
 
-class WebResearchEnvConfig(HermesAgentEnvConfig):
+class WebResearchEnvConfig(ScarlightAgentEnvConfig):
     """Configuration for the web research RL environment."""
 
     # Reward weights
@@ -198,7 +198,7 @@ class WebResearchEnvConfig(HermesAgentEnvConfig):
 # Environment
 # ---------------------------------------------------------------------------
 
-class WebResearchEnv(HermesAgentBaseEnv):
+class WebResearchEnv(ScarlightAgentBaseEnv):
     """
     RL environment for training multi-step web research skills.
 
@@ -433,7 +433,7 @@ class WebResearchEnv(HermesAgentBaseEnv):
         """
         import time
         import uuid
-        from environments.agent_loop import HermesAgentLoop
+        from environments.agent_loop import ScarlightAgentLoop
         from environments.tool_context import ToolContext
 
         items = self._eval_items
@@ -463,7 +463,7 @@ class WebResearchEnv(HermesAgentBaseEnv):
                 messages.append({"role": "user", "content": self.format_prompt(item)})
 
                 # Run the full agent loop with tools
-                agent = HermesAgentLoop(
+                agent = ScarlightAgentLoop(
                     server=self.server,
                     tool_schemas=tools,
                     valid_tool_names=valid_names,

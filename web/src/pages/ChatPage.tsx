@@ -1,5 +1,5 @@
 /**
- * ChatPage — embeds `hermes --tui` inside the dashboard.
+ * ChatPage — embeds `scarlight --tui` inside the dashboard.
  *
  *   <div host> (dashboard chrome)                                         .
  *     └─ <div wrapper> (rounded, dark bg, padded — the "terminal window"  .
@@ -11,7 +11,7 @@
  *              ▼                                                          .
  *     WebSocket /api/pty?token=<session>                                  .
  *          ▼                                                              .
- *     FastAPI pty_ws  (hermes_cli/web_server.py)                          .
+ *     FastAPI pty_ws  (scarlight_cli/web_server.py)                          .
  *          ▼                                                              .
  *     POSIX PTY → `node ui-tui/dist/entry.js` → tui_gateway + AIAgent     .
  */
@@ -116,8 +116,8 @@ export default function ChatPage({ isActive = true }: { isActive?: boolean }) {
   // Lazy-init: the missing-token check happens at construction so the effect
   // body doesn't have to setState (React 19's set-state-in-effect rule).
   const [banner, setBanner] = useState<string | null>(() =>
-    typeof window !== "undefined" && !window.__HERMES_SESSION_TOKEN__
-      ? "Session token unavailable. Open this page through `hermes dashboard`, not directly."
+    typeof window !== "undefined" && !window.__SCARLIGHT_SESSION_TOKEN__
+      ? "Session token unavailable. Open this page through `scarlight dashboard`, not directly."
       : null,
   );
   const [copyState, setCopyState] = useState<"idle" | "copied">("idle");
@@ -268,7 +268,7 @@ export default function ChatPage({ isActive = true }: { isActive?: boolean }) {
     const host = hostRef.current;
     if (!host) return;
 
-    const token = window.__HERMES_SESSION_TOKEN__;
+    const token = window.__SCARLIGHT_SESSION_TOKEN__;
     // Banner already initialised above; just bail before wiring xterm/WS.
     if (!token) {
       return;
@@ -287,7 +287,7 @@ export default function ChatPage({ isActive = true }: { isActive?: boolean }) {
       fontWeightBold: "700",
       macOptionIsMeta: true,
       // Single-scroll-system experiment:
-      // let the inner Hermes TUI own transcript history/scroll behavior.
+      // let the inner Scarlight TUI own transcript history/scroll behavior.
       // The outer browser xterm should act as a display/input bridge only.
       scrollback: 0,
       theme: TERMINAL_THEME,
@@ -303,7 +303,7 @@ export default function ChatPage({ isActive = true }: { isActive?: boolean }) {
     //      terminal has a selection, then emits an OSC 52 escape.  Our
     //      OSC 52 handler below decodes that escape and writes to the
     //      browser clipboard — so the flow works just like it does in
-    //      `hermes --tui`.
+    //      `scarlight --tui`.
     //
     //   2. **Ctrl/Cmd+Shift+C.**  Belt-and-suspenders shortcut that
     //      operates directly on xterm's selection, useful if the TUI
@@ -394,7 +394,7 @@ export default function ChatPage({ isActive = true }: { isActive?: boolean }) {
 
     // Single-scroll-system experiment:
     // keep browser xterm as a display/input bridge only, and let the inner
-    // Hermes TUI own transcript scrolling.
+    // Scarlight TUI own transcript scrolling.
     //
     // In practice, the most reliable path here is NOT terminal mouse-wheel
     // protocol emulation — that can vary by terminal mode and parser path.
@@ -447,7 +447,7 @@ export default function ChatPage({ isActive = true }: { isActive?: boolean }) {
         term.loadAddon(webgl);
       } catch (err) {
         console.warn(
-          "[hermes-chat] WebGL renderer unavailable; falling back to default",
+          "[scarlight-chat] WebGL renderer unavailable; falling back to default",
           err,
         );
       }
@@ -610,7 +610,7 @@ export default function ChatPage({ isActive = true }: { isActive?: boolean }) {
     //
     // For the browser embed we prefer input stability over terminal-style
     // mouse reporting, so we drop SGR mouse reports entirely instead of
-    // forwarding them into Hermes. Keyboard input, paste, and resize still
+    // forwarding them into Scarlight. Keyboard input, paste, and resize still
     // behave normally.
     // eslint-disable-next-line no-control-regex -- intentional ESC byte in xterm SGR mouse report parser
     const SGR_MOUSE_RE = /^\x1b\[<(\d+);(\d+);(\d+)([Mm])$/;
@@ -819,7 +819,7 @@ export default function ChatPage({ isActive = true }: { isActive?: boolean }) {
         >
           <div
             ref={hostRef}
-            className="hermes-chat-xterm-host min-h-0 min-w-0 flex-1"
+            className="scarlight-chat-xterm-host min-h-0 min-w-0 flex-1"
           />
 
           <Button
@@ -867,6 +867,6 @@ export default function ChatPage({ isActive = true }: { isActive?: boolean }) {
 
 declare global {
   interface Window {
-    __HERMES_SESSION_TOKEN__?: string;
+    __SCARLIGHT_SESSION_TOKEN__?: string;
   }
 }

@@ -7,7 +7,7 @@
 # Container mode: hermes runs from /nix/store bind-mounted read-only into a
 # plain Ubuntu container. The writable layer (apt/pip/npm installs) persists
 # across restarts and agent updates. Only image/volume/options changes trigger
-# container recreation. Environment variables are written to $HERMES_HOME/.env
+# container recreation. Environment variables are written to $SCARLIGHT_HOME/.env
 # and read by hermes at startup — no container recreation needed for env changes.
 #
 # Tool resolution: the hermes wrapper uses --suffix PATH for nix store tools,
@@ -17,7 +17,7 @@
 # writable tool prefixes for npm i -g, pip install, uv tool install, etc.
 #
 # Usage:
-#   services.hermes-agent = {
+#   services.scarlight-agent = {
 #     enable = true;
 #     settings.model = "anthropic/claude-sonnet-4";
 #     environmentFiles = [ config.sops.secrets."hermes/env".path ];
@@ -27,7 +27,7 @@
   flake.nixosModules.default = { config, lib, pkgs, ... }:
 
   let
-    cfg = config.services.hermes-agent;
+    cfg = config.services.scarlight-agent;
     effectivePackage =
       if cfg.extraPythonPackages == [ ] && cfg.extraDependencyGroups == [ ]
       then cfg.package
@@ -117,13 +117,13 @@
       chown "$HERMES_UID:$HERMES_GID" "$TARGET_HOME"
       chmod 0750 "$TARGET_HOME"
 
-      # Ensure HERMES_HOME is owned by the target user.
+      # Ensure SCARLIGHT_HOME is owned by the target user.
       # Use find instead of chown -R: chown strips the setgid bit (kernel
       # behavior), destroying the 2770 permissions the NixOS activation
       # script sets for group access by hostUsers.  Only touch files with
       # wrong ownership so correctly-owned dirs keep their permission bits.
-      if [ -n "''${HERMES_HOME:-}" ] && [ -d "$HERMES_HOME" ]; then
-        find "$HERMES_HOME" \! -user "$HERMES_UID" -exec chown "$HERMES_UID:$HERMES_GID" {} +
+      if [ -n "''${SCARLIGHT_HOME:-}" ] && [ -d "$SCARLIGHT_HOME" ]; then
+        find "$SCARLIGHT_HOME" \! -user "$HERMES_UID" -exec chown "$HERMES_UID:$HERMES_GID" {} +
       fi
 
       # ── Provision apt packages (first boot only, cached in writable layer) ──
@@ -184,7 +184,7 @@
 
     # Identity hash — only recreate container when structural config changes.
     # Package and entrypoint use stable symlinks (current-package, current-entrypoint)
-    # so they can update without recreation. Env vars go through $HERMES_HOME/.env.
+    # so they can update without recreation. Env vars go through $SCARLIGHT_HOME/.env.
     containerIdentity = builtins.hashString "sha256" (builtins.toJSON {
       schema = 4; # bump when identity inputs change (4: Node 18→22 via NodeSource)
       image = cfg.container.image;
@@ -202,7 +202,7 @@
       else cfg.workingDirectory;
 
   in {
-    options.services.hermes-agent = with lib; {
+    options.services.scarlight-agent = with lib; {
       enable = mkEnableOption "Hermes Agent gateway service";
 
       # ── Package ──────────────────────────────────────────────────────────
@@ -235,7 +235,7 @@
       stateDir = mkOption {
         type = types.str;
         default = "/var/lib/hermes";
-        description = "State directory. Contains .hermes/ subdir (HERMES_HOME).";
+        description = "State directory. Contains .scarlight/ subdir (SCARLIGHT_HOME).";
       };
 
       workingDirectory = mkOption {
@@ -278,7 +278,7 @@
         default = [ ];
         description = ''
           Paths to environment files containing secrets (API keys, tokens).
-          Contents are merged into $HERMES_HOME/.env at activation time.
+          Contents are merged into $SCARLIGHT_HOME/.env at activation time.
           Hermes reads this file on every startup via load_hermes_dotenv().
         '';
       };
@@ -287,7 +287,7 @@
         type = types.attrsOf types.str;
         default = { };
         description = ''
-          Non-secret environment variables. Merged into $HERMES_HOME/.env
+          Non-secret environment variables. Merged into $SCARLIGHT_HOME/.env
           at activation time. Do NOT put secrets here — use environmentFiles.
         '';
       };
@@ -362,7 +362,7 @@
               default = null;
               description = ''
                 Authentication method. Set to "oauth" for OAuth 2.1 PKCE flow
-                (remote MCP servers). Tokens are stored in $HERMES_HOME/mcp-tokens/.
+                (remote MCP servers). Tokens are stored in $SCARLIGHT_HOME/mcp-tokens/.
               '';
             };
 
@@ -499,7 +499,7 @@
         description = ''
           Python packages to add to PYTHONPATH for entry-point plugin discovery.
           These are pip-packaged plugins that register via the
-          hermes_agent.plugins entry-point group. Each package must be built
+          scarlight_agent.plugins entry-point group. Each package must be built
           with the same Python interpreter as hermes (python312).
         '';
         example = literalExpression ''
@@ -550,7 +550,7 @@
         default = false;
         description = ''
           Add the hermes CLI to environment.systemPackages and export
-          HERMES_HOME system-wide (via environment.variables) so interactive
+          SCARLIGHT_HOME system-wide (via environment.variables) so interactive
           shells share state with the gateway service.
         '';
       };
@@ -588,7 +588,7 @@
           type = types.listOf types.str;
           default = [ ];
           description = ''
-            Interactive users who get a ~/.hermes symlink to the service
+            Interactive users who get a ~/.scarlight symlink to the service
             stateDir. These users are automatically added to the hermes group.
           '';
           example = [ "sidbin" ];
@@ -600,7 +600,7 @@
 
       # ── Merge MCP servers into settings ────────────────────────────────
       (lib.mkIf (cfg.mcpServers != { }) {
-        services.hermes-agent.settings.mcp_servers = lib.mapAttrs (_name: srv:
+        services.scarlight-agent.settings.mcp_servers = lib.mapAttrs (_name: srv:
           # Stdio transport
           lib.optionalAttrs (srv.command != null) { inherit (srv) command args; }
           // lib.optionalAttrs (srv.env != { }) { inherit (srv) env; }
@@ -643,12 +643,12 @@
       })
 
       # ── Host CLI ──────────────────────────────────────────────────────
-      # Add the hermes CLI to system PATH and export HERMES_HOME system-wide
+      # Add the hermes CLI to system PATH and export SCARLIGHT_HOME system-wide
       # so interactive shells share state (sessions, skills, cron) with the
-      # gateway service instead of creating a separate ~/.hermes/.
+      # gateway service instead of creating a separate ~/.scarlight/.
       (lib.mkIf cfg.addToSystemPackages {
         environment.systemPackages = [ effectivePackage ];
-        environment.variables.HERMES_HOME = "${cfg.stateDir}/.hermes";
+        environment.variables.SCARLIGHT_HOME = "${cfg.stateDir}/.scarlight";
       })
 
       # ── Host user group membership ─────────────────────────────────────
@@ -664,7 +664,7 @@
           names = map lib.getName cfg.extraPlugins;
         in [{
           assertion = (lib.length names) == (lib.length (lib.unique names));
-          message = "services.hermes-agent.extraPlugins: duplicate plugin names detected: ${toString names}. If using fetchFromGitHub, set name = \"plugin-name\" to disambiguate.";
+          message = "services.scarlight-agent.extraPlugins: duplicate plugin names detected: ${toString names}. If using fetchFromGitHub, set name = \"plugin-name\" to disambiguate.";
         }];
       }
 
@@ -674,7 +674,7 @@
           names = map lib.getName cfg.extraPlugins;
         in [{
           assertion = (lib.length names) == (lib.length (lib.unique names));
-          message = "services.hermes-agent.extraPlugins: duplicate plugin names detected: ${toString names}. If using fetchFromGitHub, set name = \"plugin-name\" to disambiguate.";
+          message = "services.scarlight-agent.extraPlugins: duplicate plugin names detected: ${toString names}. If using fetchFromGitHub, set name = \"plugin-name\" to disambiguate.";
         }];
       }
 
@@ -693,7 +693,7 @@
       (lib.mkIf (cfg.container.enable && !cfg.addToSystemPackages && cfg.container.hostUsers != []) {
         warnings = [
           ''
-            services.hermes-agent: container.enable is true and container.hostUsers
+            services.scarlight-agent: container.enable is true and container.hostUsers
             is set, but addToSystemPackages is false. Without a host-installed hermes
             binary, container routing will not work for interactive users.
             Set addToSystemPackages = true or ensure hermes is on PATH.
@@ -705,12 +705,12 @@
       {
         systemd.tmpfiles.rules = [
           "d ${cfg.stateDir}                2770 ${cfg.user} ${cfg.group} - -"
-          "d ${cfg.stateDir}/.hermes        2770 ${cfg.user} ${cfg.group} - -"
-          "d ${cfg.stateDir}/.hermes/cron   2770 ${cfg.user} ${cfg.group} - -"
-          "d ${cfg.stateDir}/.hermes/sessions 2770 ${cfg.user} ${cfg.group} - -"
-          "d ${cfg.stateDir}/.hermes/logs   2770 ${cfg.user} ${cfg.group} - -"
-          "d ${cfg.stateDir}/.hermes/memories 2770 ${cfg.user} ${cfg.group} - -"
-          "d ${cfg.stateDir}/.hermes/plugins 2770 ${cfg.user} ${cfg.group} - -"
+          "d ${cfg.stateDir}/.scarlight        2770 ${cfg.user} ${cfg.group} - -"
+          "d ${cfg.stateDir}/.scarlight/cron   2770 ${cfg.user} ${cfg.group} - -"
+          "d ${cfg.stateDir}/.scarlight/sessions 2770 ${cfg.user} ${cfg.group} - -"
+          "d ${cfg.stateDir}/.scarlight/logs   2770 ${cfg.user} ${cfg.group} - -"
+          "d ${cfg.stateDir}/.scarlight/memories 2770 ${cfg.user} ${cfg.group} - -"
+          "d ${cfg.stateDir}/.scarlight/plugins 2770 ${cfg.user} ${cfg.group} - -"
           "d ${cfg.stateDir}/home           0750 ${cfg.user} ${cfg.group} - -"
           "d ${cfg.workingDirectory}         2770 ${cfg.user} ${cfg.group} - -"
         ];
@@ -720,23 +720,23 @@
       {
         system.activationScripts."hermes-agent-setup" = lib.stringAfter ([ "users" ] ++ lib.optional (config.system.activationScripts ? setupSecrets) "setupSecrets") ''
           # Ensure directories exist (activation runs before tmpfiles)
-          mkdir -p ${cfg.stateDir}/.hermes
+          mkdir -p ${cfg.stateDir}/.scarlight
           mkdir -p ${cfg.stateDir}/home
           mkdir -p ${cfg.workingDirectory}
-          chown ${cfg.user}:${cfg.group} ${cfg.stateDir} ${cfg.stateDir}/.hermes ${cfg.stateDir}/home ${cfg.workingDirectory}
-          chmod 2770 ${cfg.stateDir} ${cfg.stateDir}/.hermes ${cfg.workingDirectory}
+          chown ${cfg.user}:${cfg.group} ${cfg.stateDir} ${cfg.stateDir}/.scarlight ${cfg.stateDir}/home ${cfg.workingDirectory}
+          chmod 2770 ${cfg.stateDir} ${cfg.stateDir}/.scarlight ${cfg.workingDirectory}
           chmod 0750 ${cfg.stateDir}/home
 
           # Create subdirs, set setgid + group-writable, migrate existing files.
           # Nix-managed files (config.yaml, .env, .managed) stay 0640/0644.
-          find ${cfg.stateDir}/.hermes -maxdepth 1 \
+          find ${cfg.stateDir}/.scarlight -maxdepth 1 \
             \( -name "*.db" -o -name "*.db-wal" -o -name "*.db-shm" -o -name "SOUL.md" \) \
             -exec chmod g+rw {} + 2>/dev/null || true
           for _subdir in cron sessions logs memories plugins; do
-            mkdir -p "${cfg.stateDir}/.hermes/$_subdir"
-            chown ${cfg.user}:${cfg.group} "${cfg.stateDir}/.hermes/$_subdir"
-            chmod 2770 "${cfg.stateDir}/.hermes/$_subdir"
-            find "${cfg.stateDir}/.hermes/$_subdir" -type f \
+            mkdir -p "${cfg.stateDir}/.scarlight/$_subdir"
+            chown ${cfg.user}:${cfg.group} "${cfg.stateDir}/.scarlight/$_subdir"
+            chmod 2770 "${cfg.stateDir}/.scarlight/$_subdir"
+            find "${cfg.stateDir}/.scarlight/$_subdir" -type f \
               -exec chmod g+rw {} + 2>/dev/null || true
           done
 
@@ -744,41 +744,41 @@
           # Preserves user-added keys (skills, streaming, etc.); Nix keys win.
           # If configFile is user-provided (not generated), overwrite instead of merge.
           ${if cfg.configFile != null then ''
-            install -o ${cfg.user} -g ${cfg.group} -m 0640 -D ${configFile} ${cfg.stateDir}/.hermes/config.yaml
+            install -o ${cfg.user} -g ${cfg.group} -m 0640 -D ${configFile} ${cfg.stateDir}/.scarlight/config.yaml
           '' else ''
-            ${configMergeScript} ${generatedConfigFile} ${cfg.stateDir}/.hermes/config.yaml
-            chown ${cfg.user}:${cfg.group} ${cfg.stateDir}/.hermes/config.yaml
-            chmod 0640 ${cfg.stateDir}/.hermes/config.yaml
+            ${configMergeScript} ${generatedConfigFile} ${cfg.stateDir}/.scarlight/config.yaml
+            chown ${cfg.user}:${cfg.group} ${cfg.stateDir}/.scarlight/config.yaml
+            chmod 0640 ${cfg.stateDir}/.scarlight/config.yaml
           ''}
 
           # Managed mode marker (so interactive shells also detect NixOS management)
-          touch ${cfg.stateDir}/.hermes/.managed
-          chown ${cfg.user}:${cfg.group} ${cfg.stateDir}/.hermes/.managed
-          chmod 0644 ${cfg.stateDir}/.hermes/.managed
+          touch ${cfg.stateDir}/.scarlight/.managed
+          chown ${cfg.user}:${cfg.group} ${cfg.stateDir}/.scarlight/.managed
+          chmod 0644 ${cfg.stateDir}/.scarlight/.managed
 
           # Container mode metadata — tells the host CLI to exec into the
           # container instead of running locally. Removed when container mode
           # is disabled so the host CLI falls back to native execution.
           ${if cfg.container.enable then ''
-            cat > ${cfg.stateDir}/.hermes/.container-mode <<'HERMES_CONTAINER_MODE_EOF'
+            cat > ${cfg.stateDir}/.scarlight/.container-mode <<'HERMES_CONTAINER_MODE_EOF'
     # Written by NixOS activation script. Do not edit manually.
     backend=${cfg.container.backend}
     container_name=${containerName}
     exec_user=${cfg.user}
     hermes_bin=${containerDataDir}/current-package/bin/hermes
     HERMES_CONTAINER_MODE_EOF
-            chown ${cfg.user}:${cfg.group} ${cfg.stateDir}/.hermes/.container-mode
-            chmod 0644 ${cfg.stateDir}/.hermes/.container-mode
+            chown ${cfg.user}:${cfg.group} ${cfg.stateDir}/.scarlight/.container-mode
+            chmod 0644 ${cfg.stateDir}/.scarlight/.container-mode
           '' else ''
-            rm -f ${cfg.stateDir}/.hermes/.container-mode
+            rm -f ${cfg.stateDir}/.scarlight/.container-mode
 
             # Remove symlink bridge for hostUsers
             ${lib.concatStringsSep "\n" (map (user:
               let
                 userHome = config.users.users.${user}.home;
-                symlinkPath = "${userHome}/.hermes";
+                symlinkPath = "${userHome}/.scarlight";
               in ''
-                if [ -L "${symlinkPath}" ] && [ "$(readlink "${symlinkPath}")" = "${cfg.stateDir}/.hermes" ]; then
+                if [ -L "${symlinkPath}" ] && [ "$(readlink "${symlinkPath}")" = "${cfg.stateDir}/.scarlight" ]; then
                   rm -f "${symlinkPath}"
                   echo "hermes-agent: removed symlink ${symlinkPath}"
                 fi
@@ -786,15 +786,15 @@
           ''}
 
           # ── Symlink bridge for interactive users ───────────────────────
-          # Create ~/.hermes -> stateDir/.hermes for each hostUser so the
+          # Create ~/.scarlight -> stateDir/.scarlight for each hostUser so the
           # host CLI shares state with the container service.
           # Only runs when container mode is enabled.
           ${lib.optionalString cfg.container.enable
             (lib.concatStringsSep "\n" (map (user:
               let
                 userHome = config.users.users.${user}.home;
-                symlinkPath = "${userHome}/.hermes";
-                target = "${cfg.stateDir}/.hermes";
+                symlinkPath = "${userHome}/.scarlight";
+                target = "${cfg.stateDir}/.scarlight";
               in ''
                 if [ -d "${symlinkPath}" ] && [ ! -L "${symlinkPath}" ]; then
                   # Real directory — back it up, then create symlink.
@@ -812,19 +812,19 @@
           # Seed auth file if provided
           ${lib.optionalString (cfg.authFile != null) ''
             ${if cfg.authFileForceOverwrite then ''
-              install -o ${cfg.user} -g ${cfg.group} -m 0600 ${cfg.authFile} ${cfg.stateDir}/.hermes/auth.json
+              install -o ${cfg.user} -g ${cfg.group} -m 0600 ${cfg.authFile} ${cfg.stateDir}/.scarlight/auth.json
             '' else ''
-              if [ ! -f ${cfg.stateDir}/.hermes/auth.json ]; then
-                install -o ${cfg.user} -g ${cfg.group} -m 0600 ${cfg.authFile} ${cfg.stateDir}/.hermes/auth.json
+              if [ ! -f ${cfg.stateDir}/.scarlight/auth.json ]; then
+                install -o ${cfg.user} -g ${cfg.group} -m 0600 ${cfg.authFile} ${cfg.stateDir}/.scarlight/auth.json
               fi
             ''}
           ''}
 
           # Seed .env from Nix-declared environment + environmentFiles.
-          # Hermes reads $HERMES_HOME/.env at startup via load_hermes_dotenv(),
+          # Hermes reads $SCARLIGHT_HOME/.env at startup via load_hermes_dotenv(),
           # so this is the single source of truth for both native and container mode.
           ${lib.optionalString (cfg.environment != {} || cfg.environmentFiles != []) ''
-            ENV_FILE="${cfg.stateDir}/.hermes/.env"
+            ENV_FILE="${cfg.stateDir}/.scarlight/.env"
             install -o ${cfg.user} -g ${cfg.group} -m 0640 /dev/null "$ENV_FILE"
             cat > "$ENV_FILE" <<'HERMES_NIX_ENV_EOF'
     ${envFileContent}
@@ -844,7 +844,7 @@
 
         # ── Declarative plugins ─────────────────────────────────────────
         # Remove stale managed symlinks (plugins removed from config)
-        find ${cfg.stateDir}/.hermes/plugins -maxdepth 1 -type l -name 'nix-managed-*' -delete 2>/dev/null || true
+        find ${cfg.stateDir}/.scarlight/plugins -maxdepth 1 -type l -name 'nix-managed-*' -delete 2>/dev/null || true
 
         ${lib.concatStringsSep "\n" (map (plugin:
           let
@@ -854,8 +854,8 @@
               echo "ERROR: extraPlugins entry '${plugin}' has no plugin.yaml" >&2
               exit 1
             fi
-            ln -sfn ${plugin} ${cfg.stateDir}/.hermes/plugins/nix-managed-${name}
-            chown -h ${cfg.user}:${cfg.group} ${cfg.stateDir}/.hermes/plugins/nix-managed-${name}
+            ln -sfn ${plugin} ${cfg.stateDir}/.scarlight/plugins/nix-managed-${name}
+            chown -h ${cfg.user}:${cfg.group} ${cfg.stateDir}/.scarlight/plugins/nix-managed-${name}
           '') cfg.extraPlugins)}
         '';
       }
@@ -864,7 +864,7 @@
       # MODE A: Native systemd service (default)
       # ══════════════════════════════════════════════════════════════════
       (lib.mkIf (!cfg.container.enable) {
-        systemd.services.hermes-agent = {
+        systemd.services.scarlight-agent = {
           description = "Hermes Agent Gateway";
           wantedBy = [ "multi-user.target" ];
           after = [ "network-online.target" ];
@@ -872,7 +872,7 @@
 
           environment = {
             HOME = cfg.stateDir;
-            HERMES_HOME = "${cfg.stateDir}/.hermes";
+            SCARLIGHT_HOME = "${cfg.stateDir}/.scarlight";
             HERMES_MANAGED = "true";
             MESSAGING_CWD = cfg.workingDirectory;
           };
@@ -883,7 +883,7 @@
             WorkingDirectory = cfg.workingDirectory;
 
             # cfg.environment and cfg.environmentFiles are written to
-            # $HERMES_HOME/.env by the activation script. load_hermes_dotenv()
+            # $SCARLIGHT_HOME/.env by the activation script. load_hermes_dotenv()
             # reads them at Python startup — no systemd EnvironmentFile needed.
 
             ExecStart = lib.concatStringsSep " " ([
@@ -925,7 +925,7 @@
         # Ensure the container runtime is available
         virtualisation.docker.enable = lib.mkDefault (cfg.container.backend == "docker");
 
-        systemd.services.hermes-agent = {
+        systemd.services.scarlight-agent = {
           description = "Hermes Agent Gateway (container)";
           wantedBy = [ "multi-user.target" ];
           after = [ "network-online.target" ]
@@ -968,7 +968,7 @@
                 ${lib.concatStringsSep " " (map (v: "--volume ${v}") cfg.container.extraVolumes)} \
                 --env HERMES_UID="$HERMES_UID" \
                 --env HERMES_GID="$HERMES_GID" \
-                --env HERMES_HOME=${containerDataDir}/.hermes \
+                --env SCARLIGHT_HOME=${containerDataDir}/.scarlight \
                 --env HERMES_MANAGED=true \
                 --env HOME=${containerHomeDir} \
                 --env MESSAGING_CWD=${containerWorkDir} \

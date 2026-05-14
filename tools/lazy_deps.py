@@ -1,10 +1,10 @@
 """
-Lazy dependency installer for opt-in Hermes Agent backends.
+Lazy dependency installer for opt-in Scarlight Agent backends.
 
-Many Hermes features (Mistral TTS, ElevenLabs TTS, Honcho memory, Bedrock,
+Many Scarlight features (Mistral TTS, ElevenLabs TTS, Honcho memory, Bedrock,
 Slack, Matrix, etc.) require Python packages that not every user needs. The
 historical approach was to bundle them all under ``pyproject.toml`` extras
-(``hermes-agent[all]``) and install them eagerly at setup time. That has
+(``scarlight-agent[all]``) and install them eagerly at setup time. That has
 two problems:
 
 1. **Fragility.** When one extra's transitive dependency becomes
@@ -20,7 +20,7 @@ top of their first-import path. If the deps are missing, ``ensure`` checks
 the ``security.allow_lazy_installs`` config flag (default true) and runs
 a venv-scoped pip install. If the user has explicitly disabled lazy
 installs, ``ensure`` raises :class:`FeatureUnavailable` with a clear
-remediation hint pointing at ``hermes tools`` or the manual pip command.
+remediation hint pointing at ``scarlight tools`` or the manual pip command.
 
 Security model:
 
@@ -155,7 +155,7 @@ LAZY_DEPS: dict[str, tuple[str, ...]] = {
     # ─── Tools ─────────────────────────────────────────────────────────────
     # ACP adapter (VS Code / Zed / JetBrains integration)
     "tool.acp": ("agent-client-protocol==0.9.0",),
-    # Dashboard (`hermes dashboard`)
+    # Dashboard (`scarlight dashboard`)
     "tool.dashboard": (
         "fastapi==0.133.1",
         "uvicorn[standard]==0.41.0",
@@ -215,10 +215,10 @@ def _allow_lazy_installs() -> bool:
     refusing to install would lock people out of their own backends; the
     decision to block is an explicit user opt-in.
     """
-    if os.environ.get("HERMES_DISABLE_LAZY_INSTALLS") == "1":
+    if os.environ.get("SCARLIGHT_DISABLE_LAZY_INSTALLS") == "1":
         return False
     try:
-        from hermes_cli.config import load_config
+        from scarlight_cli.config import load_config
         cfg = load_config()
     except Exception:
         return True
@@ -272,7 +272,7 @@ def _is_satisfied(spec: str) -> bool:
 def _venv_pip_install(specs: tuple[str, ...], *, timeout: int = 300) -> _InstallResult:
     """Install ``specs`` into the active venv using uv → pip → ensurepip ladder.
 
-    Mirrors the strategy in ``hermes_cli.tools_config._pip_install`` but
+    Mirrors the strategy in ``scarlight_cli.tools_config._pip_install`` but
     kept independent here so this module has no CLI dependency.
     """
     if not specs:

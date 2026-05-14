@@ -8,7 +8,7 @@ Resolution order for text tasks (auto mode):
   1. User's main provider + main model (used regardless of provider type —
      aggregators, direct API-key providers, native Anthropic, Codex, etc.)
   2. OpenRouter  (OPENROUTER_API_KEY)
-  3. Nous Portal (~/.hermes/auth.json active provider)
+  3. Nous Portal (~/.scarlight/auth.json active provider)
   4. Custom endpoint (config.yaml model.base_url + OPENAI_API_KEY)
   5. Native Anthropic
   6. Direct API-key providers (z.ai/GLM, Kimi/Moonshot, MiniMax, MiniMax-CN)
@@ -100,8 +100,8 @@ class _OpenAIProxy:
 OpenAI = _OpenAIProxy()  # module-level name, resolves lazily on call/isinstance
 
 from agent.credential_pool import load_pool
-from hermes_cli.config import get_hermes_home
-from hermes_constants import OPENROUTER_BASE_URL
+from scarlight_cli.config import get_scarlight_home
+from scarlight_constants import OPENROUTER_BASE_URL
 from utils import base_url_host_matches, base_url_hostname, normalize_proxy_env_vars
 
 logger = logging.getLogger(__name__)
@@ -228,7 +228,7 @@ def _compression_threshold_for_model(model: Optional[str]) -> Optional[float]:
     """Return a context-compression threshold override for specific models.
 
     The threshold is the fraction of the model's context window that must be
-    consumed before Hermes triggers summarization.  Higher values delay
+    consumed before Scarlight triggers summarization.  Higher values delay
     compression and preserve more raw context.
 
     Returns a float in (0, 1] to override the global ``compression.threshold``
@@ -309,8 +309,8 @@ _PROVIDERS_WITHOUT_VISION: frozenset = frozenset({
 # `X-Title` is the canonical attribution header OpenRouter's dashboard
 # reads; the previous `X-OpenRouter-Title` label was not recognized there.
 _OR_HEADERS_BASE = {
-    "HTTP-Referer": "https://hermes-agent.nousresearch.com",
-    "X-Title": "Hermes Agent",
+    "HTTP-Referer": "https://scarlight-agent.nousresearch.com",
+    "X-Title": "Scarlight Agent",
     "X-OpenRouter-Categories": "productivity,cli-agent",
 }
 
@@ -324,10 +324,10 @@ def build_or_headers(or_config: dict | None = None) -> dict:
     Precedence for response cache: env var > config.yaml > default (enabled).
 
     Environment variables:
-        ``HERMES_OPENROUTER_CACHE`` — truthy (``1``/``true``/``yes``/``on``)
+        ``SCARLIGHT_OPENROUTER_CACHE`` — truthy (``1``/``true``/``yes``/``on``)
             enables caching; ``0``/``false``/``no``/``off`` disables.
             Overrides ``openrouter.response_cache`` in config.yaml.
-        ``HERMES_OPENROUTER_CACHE_TTL`` — integer seconds (1-86400).
+        ``SCARLIGHT_OPENROUTER_CACHE_TTL`` — integer seconds (1-86400).
             Overrides ``openrouter.response_cache_ttl`` in config.yaml.
 
     *or_config* is the ``openrouter`` section from config.yaml.  When *None*,
@@ -338,13 +338,13 @@ def build_or_headers(or_config: dict | None = None) -> dict:
     # Resolve config from disk if not provided.
     if or_config is None:
         try:
-            from hermes_cli.config import load_config
+            from scarlight_cli.config import load_config
             or_config = load_config().get("openrouter", {})
         except Exception:
             or_config = {}
 
     # Determine cache enabled: env var overrides config.
-    env_cache = os.environ.get("HERMES_OPENROUTER_CACHE", "").strip().lower()
+    env_cache = os.environ.get("SCARLIGHT_OPENROUTER_CACHE", "").strip().lower()
     if env_cache:
         cache_enabled = env_cache in _TRUTHY_ENV_VALUES
     else:
@@ -356,7 +356,7 @@ def build_or_headers(or_config: dict | None = None) -> dict:
     headers["X-OpenRouter-Cache"] = "true"
 
     # Determine TTL: env var overrides config.
-    env_ttl = os.environ.get("HERMES_OPENROUTER_CACHE_TTL", "").strip()
+    env_ttl = os.environ.get("SCARLIGHT_OPENROUTER_CACHE_TTL", "").strip()
     if env_ttl:
         if env_ttl.isdigit():
             ttl = int(env_ttl)
@@ -371,12 +371,12 @@ def build_or_headers(or_config: dict | None = None) -> dict:
 
 # Vercel AI Gateway app attribution headers. HTTP-Referer maps to
 # referrerUrl and X-Title maps to appName in the gateway's analytics.
-from hermes_cli import __version__ as _HERMES_VERSION
+from scarlight_cli import __version__ as _SCARLIGHT_VERSION
 
 _AI_GATEWAY_HEADERS = {
-    "HTTP-Referer": "https://hermes-agent.nousresearch.com",
-    "X-Title": "Hermes Agent",
-    "User-Agent": f"HermesAgent/{_HERMES_VERSION}",
+    "HTTP-Referer": "https://scarlight-agent.nousresearch.com",
+    "X-Title": "Scarlight Agent",
+    "User-Agent": f"ScarlightAgent/{_SCARLIGHT_VERSION}",
 }
 
 # Nous Portal extra_body for product attribution.
@@ -384,7 +384,7 @@ _AI_GATEWAY_HEADERS = {
 # when the auxiliary client is backed by Nous Portal.
 #
 # The tags are computed from agent.portal_tags so the client= marker stays
-# in lockstep with hermes_cli.__version__ across every Portal call site
+# in lockstep with scarlight_cli.__version__ across every Portal call site
 # (main loop, aux, compression, web_extract). Do not inline a literal here;
 # see agent/portal_tags.py for the rationale.
 from agent.portal_tags import nous_portal_tags as _nous_portal_tags
@@ -393,7 +393,7 @@ from agent.portal_tags import nous_portal_tags as _nous_portal_tags
 def _nous_extra_body() -> dict:
     """Return a fresh Nous Portal ``extra_body`` dict.
 
-    Computed at call time so a hot-reloaded ``hermes_cli.__version__`` is
+    Computed at call time so a hot-reloaded ``scarlight_cli.__version__`` is
     reflected without restarting long-running processes.
     """
     return {"tags": _nous_portal_tags()}
@@ -413,7 +413,7 @@ _OPENROUTER_MODEL = "google/gemini-3-flash-preview"
 _NOUS_MODEL = "google/gemini-3-flash-preview"
 _NOUS_DEFAULT_BASE_URL = "https://inference-api.nousresearch.com/v1"
 _ANTHROPIC_DEFAULT_BASE_URL = "https://api.anthropic.com"
-_AUTH_JSON_PATH = get_hermes_home() / "auth.json"
+_AUTH_JSON_PATH = get_scarlight_home() / "auth.json"
 
 # Codex OAuth endpoint used when a caller explicitly requests
 # provider="openai-codex".  There is deliberately no hardcoded default
@@ -445,7 +445,7 @@ def _codex_cloudflare_headers(access_token: str) -> Dict[str, str]:
     crash at client construction.
     """
     headers = {
-        "User-Agent": "codex_cli_rs/0.0.0 (Hermes Agent)",
+        "User-Agent": "codex_cli_rs/0.0.0 (Scarlight Agent)",
         "originator": "codex_cli_rs",
     }
     if not isinstance(access_token, str) or not access_token.strip():
@@ -1073,7 +1073,7 @@ def _endpoint_speaks_anthropic_messages(base_url: str) -> bool:
     """True if the endpoint at ``base_url`` speaks the Anthropic Messages
     protocol instead of OpenAI chat.completions.
 
-    Mirrors ``hermes_cli.runtime_provider._detect_api_mode_for_url`` so the
+    Mirrors ``scarlight_cli.runtime_provider._detect_api_mode_for_url`` so the
     auxiliary client and the main agent stay in sync on transport selection.
     Covers:
 
@@ -1180,7 +1180,7 @@ def _maybe_wrap_anthropic(
 
 
 def _read_nous_auth() -> Optional[dict]:
-    """Read and validate ~/.hermes/auth.json for an active Nous provider.
+    """Read and validate ~/.scarlight/auth.json for an active Nous provider.
 
     Returns the provider state dict if Nous is active with tokens,
     otherwise None.
@@ -1236,11 +1236,11 @@ def _resolve_nous_runtime_api(*, force_refresh: bool = False) -> Optional[tuple[
     or the credential pool.
     """
     try:
-        from hermes_cli.auth import resolve_nous_runtime_credentials
+        from scarlight_cli.auth import resolve_nous_runtime_credentials
 
         creds = resolve_nous_runtime_credentials(
-            min_key_ttl_seconds=max(60, int(os.getenv("HERMES_NOUS_MIN_KEY_TTL_SECONDS", "1800"))),
-            timeout_seconds=float(os.getenv("HERMES_NOUS_TIMEOUT_SECONDS", "15")),
+            min_key_ttl_seconds=max(60, int(os.getenv("SCARLIGHT_NOUS_MIN_KEY_TTL_SECONDS", "1800"))),
+            timeout_seconds=float(os.getenv("SCARLIGHT_NOUS_TIMEOUT_SECONDS", "15")),
             force_mint=force_refresh,
         )
     except Exception as exc:
@@ -1255,7 +1255,7 @@ def _resolve_nous_runtime_api(*, force_refresh: bool = False) -> Optional[tuple[
 
 
 def _read_codex_access_token() -> Optional[str]:
-    """Read a valid, non-expired Codex OAuth access token from Hermes auth store.
+    """Read a valid, non-expired Codex OAuth access token from Scarlight auth store.
 
     If a credential pool exists but currently has no selectable runtime entry
     (for example all pool slots are marked exhausted), fall back to the
@@ -1270,7 +1270,7 @@ def _read_codex_access_token() -> Optional[str]:
             return token
 
     try:
-        from hermes_cli.auth import _read_codex_tokens
+        from scarlight_cli.auth import _read_codex_tokens
         data = _read_codex_tokens()
         tokens = data.get("tokens", {})
         access_token = tokens.get("access_token")
@@ -1304,7 +1304,7 @@ def _resolve_api_key_provider() -> Tuple[Optional[OpenAI], Optional[str]]:
     credentials, or (None, None) if none are configured.
     """
     try:
-        from hermes_cli.auth import PROVIDER_REGISTRY, resolve_api_key_provider_credentials
+        from scarlight_cli.auth import PROVIDER_REGISTRY, resolve_api_key_provider_credentials
     except ImportError:
         logger.debug("Could not import PROVIDER_REGISTRY for API-key fallback")
         return None, None
@@ -1317,7 +1317,7 @@ def _resolve_api_key_provider() -> Tuple[Optional[OpenAI], Optional[str]]:
             # Without this gate, Claude Code credentials get silently used
             # as auxiliary fallback when the user's primary provider fails.
             try:
-                from hermes_cli.auth import is_provider_explicitly_configured
+                from scarlight_cli.auth import is_provider_explicitly_configured
                 if not is_provider_explicitly_configured("anthropic"):
                     continue
             except ImportError:
@@ -1345,7 +1345,7 @@ def _resolve_api_key_provider() -> Tuple[Optional[OpenAI], Optional[str]]:
             if base_url_host_matches(base_url, "api.kimi.com"):
                 extra["default_headers"] = {"User-Agent": "claude-code/0.1.0"}
             elif base_url_host_matches(base_url, "api.githubcopilot.com"):
-                from hermes_cli.models import copilot_default_headers
+                from scarlight_cli.models import copilot_default_headers
 
                 extra["default_headers"] = copilot_default_headers()
             else:
@@ -1380,7 +1380,7 @@ def _resolve_api_key_provider() -> Tuple[Optional[OpenAI], Optional[str]]:
         if base_url_host_matches(base_url, "api.kimi.com"):
             extra["default_headers"] = {"User-Agent": "claude-code/0.1.0"}
         elif base_url_host_matches(base_url, "api.githubcopilot.com"):
-            from hermes_cli.models import copilot_default_headers
+            from scarlight_cli.models import copilot_default_headers
 
             extra["default_headers"] = copilot_default_headers()
         else:
@@ -1470,7 +1470,7 @@ def _try_nous(vision: bool = False) -> Tuple[Optional[OpenAI], Optional[str]]:
     # or returns a null recommendation for this task type.
     model = _NOUS_MODEL
     try:
-        from hermes_cli.models import get_nous_recommended_aux_model
+        from scarlight_cli.models import get_nous_recommended_aux_model
         recommended = get_nous_recommended_aux_model(vision=vision)
         if recommended:
             model = recommended
@@ -1520,7 +1520,7 @@ def _read_main_model() -> str:
     if isinstance(override, str) and override.strip():
         return override.strip()
     try:
-        from hermes_cli.config import load_config
+        from scarlight_cli.config import load_config
         cfg = load_config()
         model_cfg = cfg.get("model", {})
         if isinstance(model_cfg, str) and model_cfg.strip():
@@ -1547,7 +1547,7 @@ def _read_main_provider() -> str:
     if isinstance(override, str) and override.strip():
         return override.strip().lower()
     try:
-        from hermes_cli.config import load_config
+        from scarlight_cli.config import load_config
         cfg = load_config()
         model_cfg = cfg.get("model", {})
         if isinstance(model_cfg, dict):
@@ -1593,7 +1593,7 @@ def _resolve_custom_runtime() -> Tuple[Optional[str], Optional[str], Optional[st
     environment.
     """
     try:
-        from hermes_cli.runtime_provider import resolve_runtime_provider
+        from scarlight_cli.runtime_provider import resolve_runtime_provider
 
         runtime = resolve_runtime_provider(requested="custom")
     except Exception as exc:
@@ -1683,7 +1683,7 @@ def _validate_base_url(base_url: str) -> None:
     except ValueError as exc:
         raise RuntimeError(
             f"Malformed custom endpoint URL: {candidate!r}. "
-            "Run `hermes setup` or `hermes model` and enter a valid http(s) base URL."
+            "Run `scarlight setup` or `scarlight model` and enter a valid http(s) base URL."
         ) from exc
 
 
@@ -1794,7 +1794,7 @@ def _try_anthropic(explicit_api_key: str = None) -> Tuple[Optional[Any], Optiona
     # base_url (e.g. Codex endpoint) would leak into Anthropic requests.
     base_url = _pool_runtime_base_url(entry, _ANTHROPIC_DEFAULT_BASE_URL) if pool_present else _ANTHROPIC_DEFAULT_BASE_URL
     try:
-        from hermes_cli.config import load_config
+        from scarlight_cli.config import load_config
         cfg = load_config()
         model_cfg = cfg.get("model")
         if isinstance(model_cfg, dict):
@@ -1882,7 +1882,7 @@ def _get_provider_chain() -> List[tuple]:
 # happened). Entries auto-expire so a topped-up account recovers without
 # manual intervention.
 #
-# Failure isolation: the cache is in-process only. A second hermes
+# Failure isolation: the cache is in-process only. A second scarlight
 # process won't inherit the unhealthy mark — that's intentional, since
 # the user might be running two profiles with different OpenRouter keys.
 
@@ -1968,7 +1968,7 @@ def _log_skip_unhealthy(label: str, task: Optional[str] = None) -> None:
 
 def _reset_aux_unhealthy_cache() -> None:
     """Clear the unhealthy cache. Used by tests and by a future explicit
-    user trigger (e.g. ``hermes config aux reset``)."""
+    user trigger (e.g. ``scarlight config aux reset``)."""
     _aux_unhealthy_until.clear()
     _aux_unhealthy_logged_at.clear()
 
@@ -2382,7 +2382,7 @@ def _refresh_provider_credentials(provider: str) -> bool:
     normalized = _normalize_aux_provider(provider)
     try:
         if normalized == "openai-codex":
-            from hermes_cli.auth import resolve_codex_runtime_credentials
+            from scarlight_cli.auth import resolve_codex_runtime_credentials
 
             creds = resolve_codex_runtime_credentials(force_refresh=True)
             if not str(creds.get("api_key", "") or "").strip():
@@ -2390,11 +2390,11 @@ def _refresh_provider_credentials(provider: str) -> bool:
             _evict_cached_clients(normalized)
             return True
         if normalized == "nous":
-            from hermes_cli.auth import resolve_nous_runtime_credentials
+            from scarlight_cli.auth import resolve_nous_runtime_credentials
 
             creds = resolve_nous_runtime_credentials(
-                min_key_ttl_seconds=max(60, int(os.getenv("HERMES_NOUS_MIN_KEY_TTL_SECONDS", "1800"))),
-                timeout_seconds=float(os.getenv("HERMES_NOUS_TIMEOUT_SECONDS", "15")),
+                min_key_ttl_seconds=max(60, int(os.getenv("SCARLIGHT_NOUS_MIN_KEY_TTL_SECONDS", "1800"))),
+                timeout_seconds=float(os.getenv("SCARLIGHT_NOUS_TIMEOUT_SECONDS", "15")),
                 force_mint=True,
             )
             if not str(creds.get("api_key", "") or "").strip():
@@ -2494,8 +2494,8 @@ def _resolve_auto(main_runtime: Optional[Dict[str, Any]] = None) -> Tuple[Option
 
     # ── Warn once if OPENAI_BASE_URL is set but config.yaml uses a named
     #    provider (not 'custom').  This catches the common "env poisoning"
-    #    scenario where a user switches providers via `hermes model` but the
-    #    old OPENAI_BASE_URL lingers in ~/.hermes/.env. ──
+    #    scenario where a user switches providers via `scarlight model` but the
+    #    old OPENAI_BASE_URL lingers in ~/.scarlight/.env. ──
     if not _stale_base_url_warned:
         _env_base = os.getenv("OPENAI_BASE_URL", "").strip()
         _cfg_provider = runtime_provider or _read_main_provider()
@@ -2505,8 +2505,8 @@ def _resolve_auto(main_runtime: Optional[Dict[str, Any]] = None) -> Tuple[Option
             logger.warning(
                 "OPENAI_BASE_URL is set (%s) but model.provider is '%s'. "
                 "Auxiliary clients may route to the wrong endpoint. "
-                "Run: hermes model to reconfigure, or remove "
-                "OPENAI_BASE_URL from ~/.hermes/.env",
+                "Run: scarlight model to reconfigure, or remove "
+                "OPENAI_BASE_URL from ~/.scarlight/.env",
                 _env_base, _cfg_provider,
             )
             _stale_base_url_warned = True
@@ -2620,7 +2620,7 @@ def _to_async_client(sync_client, model: str, is_vision: bool = False):
     if base_url_host_matches(sync_base_url, "openrouter.ai"):
         async_kwargs["default_headers"] = build_or_headers()
     elif base_url_host_matches(sync_base_url, "api.githubcopilot.com"):
-        from hermes_cli.copilot_auth import copilot_request_headers
+        from scarlight_cli.copilot_auth import copilot_request_headers
 
         async_kwargs["default_headers"] = copilot_request_headers(
             is_agent_turn=True, is_vision=is_vision
@@ -2649,7 +2649,7 @@ def _normalize_resolved_model(model_name: Optional[str], provider: str) -> Optio
     if not model_name:
         return model_name
     try:
-        from hermes_cli.model_normalize import normalize_model_for_provider
+        from scarlight_cli.model_normalize import normalize_model_for_provider
 
         return normalize_model_for_provider(model_name, provider)
     except Exception:
@@ -2798,7 +2798,7 @@ def resolve_provider_client(
         client, default = _try_nous(vision=_is_vision)
         if client is None:
             logger.warning("resolve_provider_client: nous requested "
-                           "but Nous Portal not configured (run: hermes auth)")
+                           "but Nous Portal not configured (run: scarlight auth)")
             return None, None
         final_model = _normalize_resolved_model(model or default, provider)
         return (_to_async_client(client, final_model, is_vision=is_vision) if async_mode
@@ -2819,7 +2819,7 @@ def resolve_provider_client(
             codex_token = _read_codex_access_token()
             if not codex_token:
                 logger.warning("resolve_provider_client: openai-codex requested "
-                               "but no Codex OAuth token found (run: hermes model)")
+                               "but no Codex OAuth token found (run: scarlight model)")
                 return None, None
             final_model = _normalize_resolved_model(model, provider)
             raw_client = OpenAI(
@@ -2832,7 +2832,7 @@ def resolve_provider_client(
         client, default = _build_codex_client(model)
         if client is None:
             logger.warning("resolve_provider_client: openai-codex requested "
-                           "but no Codex OAuth token found (run: hermes model)")
+                           "but no Codex OAuth token found (run: scarlight model)")
             return None, None
         final_model = _normalize_resolved_model(model or default, provider)
         return (_to_async_client(client, final_model, is_vision=is_vision) if async_mode
@@ -2864,7 +2864,7 @@ def resolve_provider_client(
             if base_url_host_matches(custom_base, "api.kimi.com"):
                 extra["default_headers"] = {"User-Agent": "claude-code/0.1.0"}
             elif base_url_host_matches(custom_base, "api.githubcopilot.com"):
-                from hermes_cli.copilot_auth import copilot_request_headers
+                from scarlight_cli.copilot_auth import copilot_request_headers
                 extra["default_headers"] = copilot_request_headers(
                     is_agent_turn=True, is_vision=is_vision
                 )
@@ -2899,7 +2899,7 @@ def resolve_provider_client(
 
     # ── Named custom providers (config.yaml providers dict / custom_providers list) ───
     try:
-        from hermes_cli.runtime_provider import _get_named_custom_provider
+        from scarlight_cli.runtime_provider import _get_named_custom_provider
         # When the raw requested name is an alias (``kimi`` → ``kimi-coding``)
         # and the user defined a ``custom_providers`` entry under that alias
         # name, the custom entry is the intended target — the built-in alias
@@ -2996,13 +2996,13 @@ def resolve_provider_client(
 
     # ── API-key providers from PROVIDER_REGISTRY ─────────────────────
     try:
-        from hermes_cli.auth import (
+        from scarlight_cli.auth import (
             PROVIDER_REGISTRY,
             resolve_api_key_provider_credentials,
             resolve_external_process_provider_credentials,
         )
     except ImportError:
-        logger.debug("hermes_cli.auth not available for provider %s", provider)
+        logger.debug("scarlight_cli.auth not available for provider %s", provider)
         return None, None
 
     pconfig = PROVIDER_REGISTRY.get(provider)
@@ -3061,7 +3061,7 @@ def resolve_provider_client(
         if base_url_host_matches(base_url, "api.kimi.com"):
             headers["User-Agent"] = "claude-code/0.1.0"
         elif base_url_host_matches(base_url, "api.githubcopilot.com"):
-            from hermes_cli.copilot_auth import copilot_request_headers
+            from scarlight_cli.copilot_auth import copilot_request_headers
 
             headers.update(copilot_request_headers(
                 is_agent_turn=True, is_vision=is_vision
@@ -3087,7 +3087,7 @@ def resolve_provider_client(
         # routes through responses.stream().
         if provider == "copilot" and final_model and not raw_codex:
             try:
-                from hermes_cli.models import _should_use_copilot_responses_api
+                from scarlight_cli.models import _should_use_copilot_responses_api
                 if _should_use_copilot_responses_api(final_model):
                     logger.debug(
                         "resolve_provider_client: copilot model %s needs "
@@ -3868,7 +3868,7 @@ def _get_auxiliary_task_config(task: str) -> Dict[str, Any]:
     if not task:
         return {}
     try:
-        from hermes_cli.config import load_config
+        from scarlight_cli.config import load_config
         config = load_config()
     except ImportError:
         return {}
@@ -4154,7 +4154,7 @@ def call_llm(
         if client is None:
             raise RuntimeError(
                 f"No LLM provider configured for task={task} provider={resolved_provider}. "
-                f"Run: hermes setup"
+                f"Run: scarlight setup"
             )
         resolved_provider = effective_provider or resolved_provider
     else:
@@ -4175,7 +4175,7 @@ def call_llm(
                 raise RuntimeError(
                     f"Provider '{_explicit}' is set in config.yaml but no API key "
                     f"was found. Set the {_explicit.upper()}_API_KEY environment "
-                    f"variable, or switch to a different provider with `hermes model`."
+                    f"variable, or switch to a different provider with `scarlight model`."
                 )
             # For auto/custom with no credentials, try the full auto chain
             # rather than hardcoding OpenRouter (which may be depleted).
@@ -4189,7 +4189,7 @@ def call_llm(
         if client is None:
             raise RuntimeError(
                 f"No LLM provider configured for task={task} provider={resolved_provider}. "
-                f"Run: hermes setup")
+                f"Run: scarlight setup")
 
     effective_timeout = timeout if timeout is not None else _get_task_timeout(task)
 
@@ -4526,7 +4526,7 @@ async def async_call_llm(
         if client is None:
             raise RuntimeError(
                 f"No LLM provider configured for task={task} provider={resolved_provider}. "
-                f"Run: hermes setup"
+                f"Run: scarlight setup"
             )
         resolved_provider = effective_provider or resolved_provider
     else:
@@ -4544,7 +4544,7 @@ async def async_call_llm(
                 raise RuntimeError(
                     f"Provider '{_explicit}' is set in config.yaml but no API key "
                     f"was found. Set the {_explicit.upper()}_API_KEY environment "
-                    f"variable, or switch to a different provider with `hermes model`."
+                    f"variable, or switch to a different provider with `scarlight model`."
                 )
             if not resolved_base_url:
                 logger.info("Auxiliary %s: provider %s unavailable, trying auto-detection chain",
@@ -4553,7 +4553,7 @@ async def async_call_llm(
         if client is None:
             raise RuntimeError(
                 f"No LLM provider configured for task={task} provider={resolved_provider}. "
-                f"Run: hermes setup")
+                f"Run: scarlight setup")
 
     effective_timeout = timeout if timeout is not None else _get_task_timeout(task)
 

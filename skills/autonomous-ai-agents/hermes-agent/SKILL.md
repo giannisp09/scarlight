@@ -231,7 +231,7 @@ hermes uninstall            Uninstall Hermes
 Type these during an interactive chat session. New commands land fairly
 often; if something below looks stale, run `/help` in-session for the
 authoritative list or see the [live slash commands reference](https://hermes-agent.nousresearch.com/docs/reference/slash-commands).
-The registry of record is `hermes_cli/commands.py` — every consumer
+The registry of record is `scarlight_cli/commands.py` — every consumer
 (autocomplete, Telegram menu, Slack mapping, `/help`) derives from it.
 
 ### Session Control
@@ -279,7 +279,7 @@ The registry of record is `hermes_cli/commands.py` — every consumer
 /toolsets            List toolsets (CLI)
 /skills              Search/install skills (CLI)
 /skill <name>        Load a skill into session
-/reload-skills       Re-scan ~/.hermes/skills/ for added/removed skills
+/reload-skills       Re-scan ~/.scarlight/skills/ for added/removed skills
 /reload              Reload .env variables into the running session (CLI)
 /reload-mcp          Reload MCP servers
 /cron                Manage cron jobs (CLI)
@@ -333,16 +333,16 @@ The registry of record is `hermes_cli/commands.py` — every consumer
 ## Key Paths & Config
 
 ```
-~/.hermes/config.yaml       Main configuration
-~/.hermes/.env              API keys and secrets
-$HERMES_HOME/skills/        Installed skills
-~/.hermes/sessions/         Session transcripts
-~/.hermes/logs/             Gateway and error logs
-~/.hermes/auth.json         OAuth tokens and credential pools
-~/.hermes/hermes-agent/     Source code (if git-installed)
+~/.scarlight/config.yaml       Main configuration
+~/.scarlight/.env              API keys and secrets
+$SCARLIGHT_HOME/skills/        Installed skills
+~/.scarlight/sessions/         Session transcripts
+~/.scarlight/logs/             Gateway and error logs
+~/.scarlight/auth.json         OAuth tokens and credential pools
+~/.scarlight/hermes-agent/     Source code (if git-installed)
 ```
 
-Profiles use `~/.hermes/profiles/<name>/` with the same layout.
+Profiles use `~/.scarlight/profiles/<name>/` with the same layout.
 
 ### Config Sections
 
@@ -432,7 +432,7 @@ Enable/disable via `hermes tools` (interactive) or `hermes tools enable/disable 
 | `rl` | Reinforcement learning tools (off by default) |
 | `moa` | Mixture of Agents (off by default) |
 
-Full enumeration lives in `toolsets.py` as the `TOOLSETS` dict; `_HERMES_CORE_TOOLS` is the default bundle most platforms inherit from.
+Full enumeration lives in `toolsets.py` as the `TOOLSETS` dict; `_SCARLIGHT_CORE_TOOLS` is the default bundle most platforms inherit from.
 
 Tool changes take effect on `/reset` (new session). They do NOT apply mid-conversation to preserve prompt caching.
 
@@ -487,7 +487,7 @@ Note: YOLO / `approvals.mode: off` does NOT turn off secret redaction. They are 
 
 ### Shell hooks allowlist
 
-Some shell-hook integrations require explicit allowlisting before they fire. Managed via `~/.hermes/shell-hooks-allowlist.json` — prompted interactively the first time a hook wants to run.
+Some shell-hook integrations require explicit allowlisting before they fire. Managed via `~/.scarlight/shell-hooks-allowlist.json` — prompted interactively the first time a hook wants to run.
 
 ### Disabling the web/browser/image-gen tools
 
@@ -668,7 +668,7 @@ so nothing is lost.
   Bundled + hub-installed skills are off-limits. **Never deletes** —
   max destructive action is archive. Pinned skills are exempt from
   every auto-transition and every LLM review pass.
-- **Telemetry:** sidecar at `~/.hermes/skills/.usage.json` holds
+- **Telemetry:** sidecar at `~/.scarlight/skills/.usage.json` holds
   per-skill `use_count`, `view_count`, `patch_count`,
   `last_activity_at`, `state`, `pinned`.
 
@@ -822,7 +822,7 @@ and logs — avoids shell-escaping backslashes in bash.
 ### Gateway issues
 Check logs first:
 ```bash
-grep -i "failed to send\|error" ~/.hermes/logs/gateway.log | tail -20
+grep -i "failed to send\|error" ~/.scarlight/logs/gateway.log | tail -20
 ```
 
 Common gateway problems:
@@ -860,9 +860,9 @@ hermes config set auxiliary.vision.model <model_name>
 | Memory | `hermes memory status` or [Memory docs](https://hermes-agent.nousresearch.com/docs/user-guide/features/memory) |
 | Env variables | `hermes config env-path` or [Env vars reference](https://hermes-agent.nousresearch.com/docs/reference/environment-variables) |
 | CLI commands | `hermes --help` or [CLI reference](https://hermes-agent.nousresearch.com/docs/reference/cli-commands) |
-| Gateway logs | `~/.hermes/logs/gateway.log` |
-| Session files | `~/.hermes/sessions/` or `hermes sessions browse` |
-| Source code | `~/.hermes/hermes-agent/` |
+| Gateway logs | `~/.scarlight/logs/gateway.log` |
+| Session files | `~/.scarlight/sessions/` or `hermes sessions browse` |
+| Source code | `~/.scarlight/hermes-agent/` |
 
 ---
 
@@ -877,10 +877,10 @@ hermes-agent/
 ├── run_agent.py          # AIAgent — core conversation loop
 ├── model_tools.py        # Tool discovery and dispatch
 ├── toolsets.py           # Toolset definitions
-├── cli.py                # Interactive CLI (HermesCLI)
-├── hermes_state.py       # SQLite session store
+├── cli.py                # Interactive CLI (ScarlightCLI)
+├── scarlight_state.py       # SQLite session store
 ├── agent/                # Prompt builder, context compression, memory, model routing, credential pooling, skill dispatch
-├── hermes_cli/           # CLI subcommands, config, setup, commands
+├── scarlight_cli/           # CLI subcommands, config, setup, commands
 │   ├── commands.py       # Slash command registry (CommandDef)
 │   ├── config.py         # DEFAULT_CONFIG, env var definitions
 │   └── main.py           # CLI entry point and argparse
@@ -893,7 +893,7 @@ hermes-agent/
 └── website/              # Docusaurus docs site
 ```
 
-Config: `~/.hermes/config.yaml` (settings), `~/.hermes/.env` (API keys).
+Config: `~/.scarlight/config.yaml` (settings), `~/.scarlight/.env` (API keys).
 
 ### Adding a Tool (3 files)
 
@@ -919,15 +919,15 @@ registry.register(
 )
 ```
 
-**2. Add to `toolsets.py`** → `_HERMES_CORE_TOOLS` list.
+**2. Add to `toolsets.py`** → `_SCARLIGHT_CORE_TOOLS` list.
 
 Auto-discovery: any `tools/*.py` file with a top-level `registry.register()` call is imported automatically — no manual list needed.
 
-All handlers must return JSON strings. Use `get_hermes_home()` for paths, never hardcode `~/.hermes`.
+All handlers must return JSON strings. Use `get_scarlight_home()` for paths, never hardcode `~/.scarlight`.
 
 ### Adding a Slash Command
 
-1. Add `CommandDef` to `COMMAND_REGISTRY` in `hermes_cli/commands.py`
+1. Add `CommandDef` to `COMMAND_REGISTRY` in `scarlight_cli/commands.py`
 2. Add handler in `cli.py` → `process_command()`
 3. (Optional) Add gateway handler in `gateway/run.py`
 
@@ -952,7 +952,7 @@ python -m pytest tests/ -o 'addopts=' -q   # Full suite
 python -m pytest tests/tools/ -q            # Specific area
 ```
 
-- Tests auto-redirect `HERMES_HOME` to temp dirs — never touch real `~/.hermes/`
+- Tests auto-redirect `SCARLIGHT_HOME` to temp dirs — never touch real `~/.scarlight/`
 - Run full suite before pushing any change
 - Use `-o 'addopts='` to clear any baked-in pytest flags
 
@@ -967,7 +967,7 @@ Use `-n 0` (not `-n 4`) because `pyproject.toml`'s default `addopts` already inc
 
 **Cross-platform test guards:** tests that use POSIX-only syscalls need a skip marker. Common ones already in the codebase:
 - Symlink creation → `@pytest.mark.skipif(sys.platform == "win32", reason="Symlinks require elevated privileges on Windows")` (see `tests/cron/test_cron_script.py`)
-- POSIX file modes (0o600, etc.) → `@pytest.mark.skipif(sys.platform.startswith("win"), reason="POSIX mode bits not enforced on Windows")` (see `tests/hermes_cli/test_auth_toctou_file_modes.py`)
+- POSIX file modes (0o600, etc.) → `@pytest.mark.skipif(sys.platform.startswith("win"), reason="POSIX mode bits not enforced on Windows")` (see `tests/scarlight_cli/test_auth_toctou_file_modes.py`)
 - `signal.SIGALRM` → Unix-only (see `tests/conftest.py::_enforce_test_timeout`)
 - Live Winsock / Windows-specific regression tests → `@pytest.mark.skipif(sys.platform != "win32", reason="Windows-specific regression")`
 
@@ -1008,6 +1008,6 @@ Types: `fix:`, `feat:`, `refactor:`, `docs:`, `chore:`
 
 - **Never break prompt caching** — don't change context, tools, or system prompt mid-conversation
 - **Message role alternation** — never two assistant or two user messages in a row
-- Use `get_hermes_home()` from `hermes_constants` for all paths (profile-safe)
+- Use `get_scarlight_home()` from `scarlight_constants` for all paths (profile-safe)
 - Config values go in `config.yaml`, secrets go in `.env`
 - New tools need a `check_fn` so they only appear when requirements are met

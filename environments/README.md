@@ -16,7 +16,7 @@ This directory contains the integration layer between **hermes-agent's** tool-ca
                     └───────────┬───────────┘
                                 │ inherits
                     ┌───────────┴───────────┐
-                    │  HermesAgentBaseEnv    │  hermes_base_env.py
+                    │  ScarlightAgentBaseEnv    │  hermes_base_env.py
                     │  - Terminal backend    │
                     │  - Tool resolution     │
                     │  - Agent loop          │
@@ -26,7 +26,7 @@ This directory contains the integration layer between **hermes-agent's** tool-ca
                                 │ inherits
               ┌─────────────────┼─────────────────┐
               │                 │                  │
-     TerminalTestEnv     HermesSweEnv    TerminalBench2EvalEnv
+     TerminalTestEnv     ScarlightSweEnv    TerminalBench2EvalEnv
      (stack testing)     (SWE training)   (TB2 benchmark eval)
 ```
 
@@ -39,14 +39,14 @@ This directory contains the integration layer between **hermes-agent's** tool-ca
 - CLI interface with three subcommands: `serve`, `process`, `evaluate`
 - `evaluate_log()` for saving eval results to JSON + samples.jsonl
 
-**HermesAgentBaseEnv** (`hermes_base_env.py`) extends BaseEnv with hermes-agent specifics:
+**ScarlightAgentBaseEnv** (`hermes_base_env.py`) extends BaseEnv with hermes-agent specifics:
 - Sets `os.environ["TERMINAL_ENV"]` to configure the terminal backend (local, docker, ssh, singularity, modal, daytona, vercel_sandbox)
 - Resolves hermes-agent toolsets via `_resolve_tools_for_group()` (calls `get_tool_definitions()` which queries `tools/registry.py`)
 - Implements `collect_trajectory()` which runs the full agent loop and computes rewards
 - Supports two-phase operation (Phase 1: OpenAI server, Phase 2: VLLM ManagedServer)
 - Applies monkey patches for async-safe tool operation at import time
 
-Concrete environments inherit from `HermesAgentBaseEnv` and implement:
+Concrete environments inherit from `ScarlightAgentBaseEnv` and implement:
 - `setup()` -- Load dataset, initialize state
 - `get_next_item()` -- Return the next item for rollout
 - `format_prompt()` -- Convert a dataset item into the user message
@@ -57,7 +57,7 @@ Concrete environments inherit from `HermesAgentBaseEnv` and implement:
 
 ### Agent Loop (`agent_loop.py`)
 
-`HermesAgentLoop` is the reusable multi-turn agent engine. It runs the same pattern as hermes-agent's `run_agent.py`:
+`ScarlightAgentLoop` is the reusable multi-turn agent engine. It runs the same pattern as hermes-agent's `run_agent.py`:
 
 1. Send messages + tools to the API via `server.chat_completion()`
 2. If the response contains `tool_calls`, execute each one via `handle_function_call()` (which delegates to `tools/registry.py`'s `dispatch()`)
@@ -159,8 +159,8 @@ Uses ManagedServer for exact token IDs + logprobs via `/generate`. Client-side t
 environments/
 ├── README.md                     # This file
 ├── __init__.py                   # Package exports
-├── hermes_base_env.py            # Abstract base (HermesAgentBaseEnv)
-├── agent_loop.py                 # Multi-turn agent engine (HermesAgentLoop)
+├── hermes_base_env.py            # Abstract base (ScarlightAgentBaseEnv)
+├── agent_loop.py                 # Multi-turn agent engine (ScarlightAgentLoop)
 ├── tool_context.py               # Per-rollout tool access for reward functions
 ├── patches.py                    # Async-safety patches for Modal backend
 │
@@ -209,7 +209,7 @@ python environments/terminal_test_env/terminal_test_env.py process \
     --env.data_path_to_save_groups terminal_test_output.jsonl
 ```
 
-### HermesSweEnv (`hermes_swe_env/`)
+### ScarlightSweEnv (`hermes_swe_env/`)
 
 SWE-bench style training environment. The model gets a coding task, uses terminal + file + web tools to solve it, and the reward function runs tests in the same Modal sandbox.
 
@@ -251,16 +251,16 @@ python environments/benchmarks/terminalbench_2/terminalbench2_env.py evaluate \
 ### Training Environment
 
 1. Create a new directory under `environments/`
-2. Create your env file inheriting from `HermesAgentBaseEnv`
+2. Create your env file inheriting from `ScarlightAgentBaseEnv`
 3. Implement the four abstract methods + `evaluate()`
 
 ```python
-from environments.hermes_base_env import HermesAgentBaseEnv, HermesAgentEnvConfig
+from environments.hermes_base_env import ScarlightAgentBaseEnv, ScarlightAgentEnvConfig
 
-class MyEnvConfig(HermesAgentEnvConfig):
+class MyEnvConfig(ScarlightAgentEnvConfig):
     pass  # Add custom fields as needed
 
-class MyEnv(HermesAgentBaseEnv):
+class MyEnv(ScarlightAgentBaseEnv):
     name = "my-env"
     env_config_cls = MyEnvConfig
 
@@ -303,7 +303,7 @@ if __name__ == "__main__":
 
 For eval benchmarks, follow the pattern in `terminalbench2_env.py`:
 1. Create under `environments/benchmarks/your-benchmark/`
-2. Inherit from `HermesAgentBaseEnv`
+2. Inherit from `ScarlightAgentBaseEnv`
 3. Set eval-only config: `eval_handling=STOP_TRAIN`, `steps_per_eval=1`, `total_steps=1`
 4. Stub the training methods (`collect_trajectories`, `score`)
 5. Implement `rollout_and_score_eval()` and `evaluate()`

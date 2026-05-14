@@ -1,7 +1,7 @@
 """Tests for the Kanban tool surface (tools/kanban_tools.py).
 
 Verifies:
-  - Tools are gated on HERMES_KANBAN_TASK: a normal chat session sees
+  - Tools are gated on SCARLIGHT_KANBAN_TASK: a normal chat session sees
     zero kanban tools in its schema; a worker session sees the kanban set.
   - Each handler's happy path.
   - Error paths (missing required args, bad metadata type, etc).
@@ -19,19 +19,19 @@ import pytest
 # ---------------------------------------------------------------------------
 
 def test_kanban_tools_hidden_without_env_var(monkeypatch, tmp_path):
-    """Normal `hermes chat` sessions (no HERMES_KANBAN_TASK) must have
+    """Normal `scarlight chat` sessions (no SCARLIGHT_KANBAN_TASK) must have
     zero kanban_* tools in their schema."""
-    monkeypatch.delenv("HERMES_KANBAN_TASK", raising=False)
-    home = tmp_path / ".hermes"
+    monkeypatch.delenv("SCARLIGHT_KANBAN_TASK", raising=False)
+    home = tmp_path / ".scarlight"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("SCARLIGHT_HOME", str(home))
 
     import tools.kanban_tools  # ensure registered
     from tools.registry import invalidate_check_fn_cache, registry
     from toolsets import resolve_toolset
 
     invalidate_check_fn_cache()
-    schema = registry.get_definitions(set(resolve_toolset("hermes-cli")), quiet=True)
+    schema = registry.get_definitions(set(resolve_toolset("scarlight-cli")), quiet=True)
     names = {s["function"].get("name") for s in schema if "function" in s}
     kanban = {n for n in names if n and n.startswith("kanban_")}
     assert kanban == set(), (
@@ -41,17 +41,17 @@ def test_kanban_tools_hidden_without_env_var(monkeypatch, tmp_path):
 
 def test_kanban_tools_visible_with_env_var(monkeypatch, tmp_path):
     """Worker sessions get task lifecycle tools, not board-routing tools."""
-    monkeypatch.setenv("HERMES_KANBAN_TASK", "t_fake")
-    home = tmp_path / ".hermes"
+    monkeypatch.setenv("SCARLIGHT_KANBAN_TASK", "t_fake")
+    home = tmp_path / ".scarlight"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("SCARLIGHT_HOME", str(home))
 
     import tools.kanban_tools  # ensure registered
     from tools.registry import invalidate_check_fn_cache, registry
     from toolsets import resolve_toolset
 
     invalidate_check_fn_cache()
-    schema = registry.get_definitions(set(resolve_toolset("hermes-cli")), quiet=True)
+    schema = registry.get_definitions(set(resolve_toolset("scarlight-cli")), quiet=True)
     names = {s["function"].get("name") for s in schema if "function" in s}
     kanban = {n for n in names if n and n.startswith("kanban_")}
     expected = {
@@ -65,21 +65,21 @@ def test_worker_with_kanban_toolset_still_hides_board_routing(monkeypatch, tmp_p
     """Task scope wins over profile config for board-routing tools.
 
     Even if a worker process happens to also have ``toolsets: [kanban]``
-    in its config, the HERMES_KANBAN_TASK env var means it's a focused
+    in its config, the SCARLIGHT_KANBAN_TASK env var means it's a focused
     worker and must not see kanban_list / kanban_unblock.
     """
-    monkeypatch.setenv("HERMES_KANBAN_TASK", "t_fake")
-    home = tmp_path / ".hermes"
+    monkeypatch.setenv("SCARLIGHT_KANBAN_TASK", "t_fake")
+    home = tmp_path / ".scarlight"
     home.mkdir()
     (home / "config.yaml").write_text("toolsets:\n  - kanban\n")
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("SCARLIGHT_HOME", str(home))
 
     import tools.kanban_tools  # ensure registered
     from tools.registry import invalidate_check_fn_cache, registry
     from toolsets import resolve_toolset
 
     invalidate_check_fn_cache()
-    schema = registry.get_definitions(set(resolve_toolset("hermes-cli")), quiet=True)
+    schema = registry.get_definitions(set(resolve_toolset("scarlight-cli")), quiet=True)
     names = {s["function"].get("name") for s in schema if "function" in s}
     kanban = {n for n in names if n and n.startswith("kanban_")}
     assert {
@@ -93,18 +93,18 @@ def test_worker_with_kanban_toolset_still_hides_board_routing(monkeypatch, tmp_p
 
 def test_kanban_tools_visible_with_toolset_config(monkeypatch, tmp_path):
     """Orchestrator profiles with toolsets: [kanban] see all kanban tools."""
-    monkeypatch.delenv("HERMES_KANBAN_TASK", raising=False)
-    home = tmp_path / ".hermes"
+    monkeypatch.delenv("SCARLIGHT_KANBAN_TASK", raising=False)
+    home = tmp_path / ".scarlight"
     home.mkdir()
     (home / "config.yaml").write_text("toolsets:\n  - kanban\n")
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("SCARLIGHT_HOME", str(home))
 
     import tools.kanban_tools  # ensure registered
     from tools.registry import invalidate_check_fn_cache, registry
     from toolsets import resolve_toolset
 
     invalidate_check_fn_cache()
-    schema = registry.get_definitions(set(resolve_toolset("hermes-cli")), quiet=True)
+    schema = registry.get_definitions(set(resolve_toolset("scarlight-cli")), quiet=True)
     names = {s["function"].get("name") for s in schema if "function" in s}
     kanban = {n for n in names if n and n.startswith("kanban_")}
     expected = {
@@ -122,16 +122,16 @@ def test_kanban_tools_visible_with_toolset_config(monkeypatch, tmp_path):
 
 @pytest.fixture
 def worker_env(monkeypatch, tmp_path):
-    """Simulate being a worker: HERMES_HOME isolated, HERMES_KANBAN_TASK set
+    """Simulate being a worker: SCARLIGHT_HOME isolated, SCARLIGHT_KANBAN_TASK set
     after we've created the task."""
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".scarlight"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
-    monkeypatch.setenv("HERMES_PROFILE", "test-worker")
+    monkeypatch.setenv("SCARLIGHT_HOME", str(home))
+    monkeypatch.setenv("SCARLIGHT_PROFILE", "test-worker")
     from pathlib import Path as _Path
     monkeypatch.setattr(_Path, "home", lambda: tmp_path)
 
-    from hermes_cli import kanban_db as kb
+    from scarlight_cli import kanban_db as kb
     kb._INITIALIZED_PATHS.clear()
     kb.init_db()
     conn = kb.connect()
@@ -140,7 +140,7 @@ def worker_env(monkeypatch, tmp_path):
         kb.claim_task(conn, tid)
     finally:
         conn.close()
-    monkeypatch.setenv("HERMES_KANBAN_TASK", tid)
+    monkeypatch.setenv("SCARLIGHT_KANBAN_TASK", tid)
     return tid
 
 
@@ -157,7 +157,7 @@ def test_show_defaults_to_env_task_id(worker_env):
 
 def test_show_explicit_task_id(worker_env):
     """Peek at a different task than the one in env."""
-    from hermes_cli import kanban_db as kb
+    from scarlight_cli import kanban_db as kb
     conn = kb.connect()
     try:
         other = kb.create_task(conn, title="other task", assignee="peer")
@@ -171,8 +171,8 @@ def test_show_explicit_task_id(worker_env):
 
 def test_list_filters_tasks(monkeypatch, worker_env):
     """kanban_list gives orchestrators filtered board discovery."""
-    monkeypatch.delenv("HERMES_KANBAN_TASK", raising=False)
-    from hermes_cli import kanban_db as kb
+    monkeypatch.delenv("SCARLIGHT_KANBAN_TASK", raising=False)
+    from scarlight_cli import kanban_db as kb
     conn = kb.connect()
     try:
         a = kb.create_task(conn, title="alpha", assignee="factory", priority=5)
@@ -201,22 +201,22 @@ def test_list_filters_tasks(monkeypatch, worker_env):
 
 
 def test_list_rejects_invalid_status(monkeypatch, worker_env):
-    monkeypatch.delenv("HERMES_KANBAN_TASK", raising=False)
+    monkeypatch.delenv("SCARLIGHT_KANBAN_TASK", raising=False)
     from tools import kanban_tools as kt
     out = kt._handle_list({"status": "not-a-state"})
     assert "status must be one of" in json.loads(out).get("error", "")
 
 
 def test_list_rejects_bad_limit(monkeypatch, worker_env):
-    monkeypatch.delenv("HERMES_KANBAN_TASK", raising=False)
+    monkeypatch.delenv("SCARLIGHT_KANBAN_TASK", raising=False)
     from tools import kanban_tools as kt
     assert json.loads(kt._handle_list({"limit": "nope"})).get("error")
     assert json.loads(kt._handle_list({"limit": 0})).get("error")
 
 
 def test_list_parses_include_archived_string_false(monkeypatch, worker_env):
-    monkeypatch.delenv("HERMES_KANBAN_TASK", raising=False)
-    from hermes_cli import kanban_db as kb
+    monkeypatch.delenv("SCARLIGHT_KANBAN_TASK", raising=False)
+    from scarlight_cli import kanban_db as kb
     conn = kb.connect()
     try:
         live = kb.create_task(conn, title="live task", assignee="factory")
@@ -236,8 +236,8 @@ def test_list_parses_include_archived_string_false(monkeypatch, worker_env):
 
 
 def test_list_parses_include_archived_string_true(monkeypatch, worker_env):
-    monkeypatch.delenv("HERMES_KANBAN_TASK", raising=False)
-    from hermes_cli import kanban_db as kb
+    monkeypatch.delenv("SCARLIGHT_KANBAN_TASK", raising=False)
+    from scarlight_cli import kanban_db as kb
     conn = kb.connect()
     try:
         live = kb.create_task(conn, title="live task", assignee="factory")
@@ -257,7 +257,7 @@ def test_list_parses_include_archived_string_true(monkeypatch, worker_env):
 
 
 def test_list_rejects_bad_include_archived(monkeypatch, worker_env):
-    monkeypatch.delenv("HERMES_KANBAN_TASK", raising=False)
+    monkeypatch.delenv("SCARLIGHT_KANBAN_TASK", raising=False)
     from tools import kanban_tools as kt
     out = kt._handle_list({"include_archived": "sometimes"})
     assert "include_archived must be" in json.loads(out).get("error", "")
@@ -273,7 +273,7 @@ def test_complete_happy_path(worker_env):
     assert d["ok"] is True
     assert d["task_id"] == worker_env
     # Verify via kernel
-    from hermes_cli import kanban_db as kb
+    from scarlight_cli import kanban_db as kb
     conn = kb.connect()
     try:
         run = kb.latest_run(conn, worker_env)
@@ -289,7 +289,7 @@ def test_complete_metadata_round_trips_through_show(worker_env):
     from tools import kanban_tools as kt
 
     handoff = {
-        "changed_files": ["hermes_cli/kanban.py"],
+        "changed_files": ["scarlight_cli/kanban.py"],
         "verification": ["pytest tests/tools/test_kanban_tools.py -q"],
         "dependencies": [],
         "blocked_reason": None,
@@ -337,7 +337,7 @@ def test_complete_phantom_card_message_advertises_retry(worker_env):
     where the previous wording read like a terminal failure and workers
     routinely abandoned the run instead of trying again.
     """
-    from hermes_cli import kanban_db as kb
+    from scarlight_cli import kanban_db as kb
     from tools import kanban_tools as kt
 
     out = kt._handle_complete({
@@ -369,7 +369,7 @@ def test_complete_retry_with_empty_created_cards_succeeds(worker_env):
     """After a phantom rejection, retrying kanban_complete with
     created_cards=[] (the documented escape hatch) must complete the
     task. Regression for #22923."""
-    from hermes_cli import kanban_db as kb
+    from scarlight_cli import kanban_db as kb
     from tools import kanban_tools as kt
 
     # Hit the gate first.
@@ -397,7 +397,7 @@ def test_complete_retry_with_corrected_created_cards_succeeds(worker_env):
     """After a phantom rejection, retrying kanban_complete with a
     corrected created_cards list (phantom ids removed) must complete the
     task. Regression for #22923."""
-    from hermes_cli import kanban_db as kb
+    from scarlight_cli import kanban_db as kb
     from tools import kanban_tools as kt
 
     # Create a real child via the tool so it gets the worker-profile
@@ -435,7 +435,7 @@ def test_block_happy_path(worker_env):
     out = kt._handle_block({"reason": "need clarification"})
     d = json.loads(out)
     assert d["ok"] is True
-    from hermes_cli import kanban_db as kb
+    from scarlight_cli import kanban_db as kb
     conn = kb.connect()
     try:
         assert kb.get_task(conn, worker_env).status == "blocked"
@@ -476,7 +476,7 @@ def test_heartbeat_extends_claim_expires(worker_env):
     static while last_heartbeat_at advanced.
     """
     import time as _time
-    from hermes_cli import kanban_db as kb
+    from scarlight_cli import kanban_db as kb
     from tools import kanban_tools as kt
 
     # Rewind claim_expires into the past so any forward movement is
@@ -529,12 +529,12 @@ def test_comment_happy_path(worker_env):
     d = json.loads(out)
     assert d["ok"] is True
     assert d["comment_id"]
-    from hermes_cli import kanban_db as kb
+    from scarlight_cli import kanban_db as kb
     conn = kb.connect()
     try:
         comments = kb.list_comments(conn, worker_env)
         assert len(comments) == 1
-        # Author defaults to HERMES_PROFILE env we set in the fixture
+        # Author defaults to SCARLIGHT_PROFILE env we set in the fixture
         assert comments[0].author == "test-worker"
         assert comments[0].body == "hello thread"
     finally:
@@ -549,23 +549,23 @@ def test_comment_rejects_empty_body(worker_env):
 
 def test_comment_ignores_caller_supplied_author(worker_env):
     """``args["author"]`` is no longer honored — the author is always
-    derived from ``HERMES_PROFILE`` so a worker can't forge a comment
-    under an authoritative-looking name like ``hermes-system`` and
+    derived from ``SCARLIGHT_PROFILE`` so a worker can't forge a comment
+    under an authoritative-looking name like ``scarlight-system`` and
     poison the next worker's prompt context. Cross-task commenting
     itself remains unrestricted (see #19713); only the author override
     is removed.
     """
     from tools import kanban_tools as kt
     out = kt._handle_comment({
-        "task_id": worker_env, "body": "hi", "author": "hermes-system",
+        "task_id": worker_env, "body": "hi", "author": "scarlight-system",
     })
     assert json.loads(out)["ok"]
-    from hermes_cli import kanban_db as kb
+    from scarlight_cli import kanban_db as kb
     conn = kb.connect()
     try:
         comments = kb.list_comments(conn, worker_env)
-        # Author comes from HERMES_PROFILE in the fixture, not the
-        # caller-supplied "hermes-system" override.
+        # Author comes from SCARLIGHT_PROFILE in the fixture, not the
+        # caller-supplied "scarlight-system" override.
         assert comments[0].author == "test-worker"
     finally:
         conn.close()
@@ -592,7 +592,7 @@ def test_create_happy_path(worker_env):
     assert d["ok"] is True
     assert d["task_id"]
     assert d["status"] == "todo"  # parent isn't done yet
-    from hermes_cli import kanban_db as kb
+    from scarlight_cli import kanban_db as kb
     conn = kb.connect()
     try:
         child = kb.get_task(conn, d["task_id"])
@@ -621,7 +621,7 @@ def test_create_rejects_non_list_parents(worker_env):
 
 def test_create_parses_triage_string_false(worker_env):
     from tools import kanban_tools as kt
-    from hermes_cli import kanban_db as kb
+    from scarlight_cli import kanban_db as kb
     out = kt._handle_create({
         "title": "not triage",
         "assignee": "peer",
@@ -639,7 +639,7 @@ def test_create_parses_triage_string_false(worker_env):
 
 def test_create_parses_triage_string_true(worker_env):
     from tools import kanban_tools as kt
-    from hermes_cli import kanban_db as kb
+    from scarlight_cli import kanban_db as kb
     out = kt._handle_create({
         "title": "needs triage",
         "assignee": "peer",
@@ -677,7 +677,7 @@ def test_create_accepts_string_parent(worker_env):
 def test_create_accepts_skills_list(worker_env):
     """Tool writes the per-task skills through to the kernel."""
     from tools import kanban_tools as kt
-    from hermes_cli import kanban_db as kb
+    from scarlight_cli import kanban_db as kb
     out = kt._handle_create({
         "title": "skilled",
         "assignee": "linguist",
@@ -693,7 +693,7 @@ def test_create_accepts_skills_list(worker_env):
 def test_create_accepts_skills_string(worker_env):
     """Convenience: a single skill name as string is coerced to [name]."""
     from tools import kanban_tools as kt
-    from hermes_cli import kanban_db as kb
+    from scarlight_cli import kanban_db as kb
     out = kt._handle_create({
         "title": "one-skill",
         "assignee": "a",
@@ -716,7 +716,7 @@ def test_create_rejects_non_list_skills(worker_env):
 
 
 def test_link_happy_path(worker_env):
-    from hermes_cli import kanban_db as kb
+    from scarlight_cli import kanban_db as kb
     conn = kb.connect()
     try:
         a = kb.create_task(conn, title="A", assignee="x")
@@ -743,7 +743,7 @@ def test_link_rejects_missing_args(worker_env):
 
 def test_link_rejects_cycle(worker_env):
     """A → B, then try to link B → A."""
-    from hermes_cli import kanban_db as kb
+    from scarlight_cli import kanban_db as kb
     conn = kb.connect()
     try:
         a = kb.create_task(conn, title="A", assignee="x")
@@ -756,8 +756,8 @@ def test_link_rejects_cycle(worker_env):
 
 
 def test_unblock_happy_path(monkeypatch, worker_env):
-    monkeypatch.delenv("HERMES_KANBAN_TASK", raising=False)
-    from hermes_cli import kanban_db as kb
+    monkeypatch.delenv("SCARLIGHT_KANBAN_TASK", raising=False)
+    from scarlight_cli import kanban_db as kb
     conn = kb.connect()
     try:
         tid = kb.create_task(conn, title="blocked", assignee="worker")
@@ -779,7 +779,7 @@ def test_unblock_happy_path(monkeypatch, worker_env):
 
 
 def test_unblock_rejects_non_blocked_task(monkeypatch, worker_env):
-    monkeypatch.delenv("HERMES_KANBAN_TASK", raising=False)
+    monkeypatch.delenv("SCARLIGHT_KANBAN_TASK", raising=False)
     from tools import kanban_tools as kt
     out = kt._handle_unblock({"task_id": worker_env})
     assert json.loads(out).get("error")
@@ -820,7 +820,7 @@ def test_worker_lifecycle_through_tools(worker_env):
     assert comp["ok"]
 
     # Verify final state
-    from hermes_cli import kanban_db as kb
+    from scarlight_cli import kanban_db as kb
     conn = kb.connect()
     try:
         parent = kb.get_task(conn, worker_env)
@@ -849,12 +849,12 @@ def test_worker_lifecycle_through_tools(worker_env):
 # ---------------------------------------------------------------------------
 
 def test_kanban_guidance_not_in_normal_prompt(monkeypatch, tmp_path):
-    """A normal chat session (no HERMES_KANBAN_TASK) must NOT have
+    """A normal chat session (no SCARLIGHT_KANBAN_TASK) must NOT have
     KANBAN_GUIDANCE in its system prompt."""
-    monkeypatch.delenv("HERMES_KANBAN_TASK", raising=False)
-    home = tmp_path / ".hermes"
+    monkeypatch.delenv("SCARLIGHT_KANBAN_TASK", raising=False)
+    home = tmp_path / ".scarlight"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("SCARLIGHT_HOME", str(home))
     from pathlib import Path as _P
     monkeypatch.setattr(_P, "home", lambda: tmp_path)
 
@@ -872,12 +872,12 @@ def test_kanban_guidance_not_in_normal_prompt(monkeypatch, tmp_path):
 
 
 def test_kanban_guidance_in_worker_prompt(monkeypatch, tmp_path):
-    """A worker session (HERMES_KANBAN_TASK set) MUST have the full
+    """A worker session (SCARLIGHT_KANBAN_TASK set) MUST have the full
     lifecycle guidance in its system prompt."""
-    monkeypatch.setenv("HERMES_KANBAN_TASK", "t_fake")
-    home = tmp_path / ".hermes"
+    monkeypatch.setenv("SCARLIGHT_KANBAN_TASK", "t_fake")
+    home = tmp_path / ".scarlight"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("SCARLIGHT_HOME", str(home))
     from pathlib import Path as _P
     monkeypatch.setattr(_P, "home", lambda: tmp_path)
 
@@ -904,10 +904,10 @@ def test_kanban_guidance_in_worker_prompt(monkeypatch, tmp_path):
 def test_kanban_guidance_prompt_size_bounded(monkeypatch, tmp_path):
     """Sanity: the guidance block is under 4 KB so it doesn't blow
     up the cached prompt."""
-    monkeypatch.setenv("HERMES_KANBAN_TASK", "t_fake")
-    home = tmp_path / ".hermes"
+    monkeypatch.setenv("SCARLIGHT_KANBAN_TASK", "t_fake")
+    home = tmp_path / ".scarlight"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("SCARLIGHT_HOME", str(home))
     from pathlib import Path as _P
     monkeypatch.setattr(_P, "home", lambda: tmp_path)
 
@@ -921,7 +921,7 @@ def test_kanban_guidance_prompt_size_bounded(monkeypatch, tmp_path):
 # Worker task-ownership enforcement (regression tests for #19534)
 # ---------------------------------------------------------------------------
 #
-# A worker process has HERMES_KANBAN_TASK set to its own task id. The
+# A worker process has SCARLIGHT_KANBAN_TASK set to its own task id. The
 # destructive tools (kanban_complete, kanban_block, kanban_heartbeat,
 # kanban_unblock) must refuse to operate
 # on any OTHER task id, even if the caller supplies an explicit `task_id`
@@ -929,14 +929,14 @@ def test_kanban_guidance_prompt_size_bounded(monkeypatch, tmp_path):
 # kanban_comment / kanban_create / kanban_link on other tasks, so those
 # are unrestricted.
 #
-# Orchestrator profiles (no HERMES_KANBAN_TASK in env) are intentionally
+# Orchestrator profiles (no SCARLIGHT_KANBAN_TASK in env) are intentionally
 # exempt — their job is routing, and they sometimes close out child
 # tasks on behalf of the child.
 
 
 def test_worker_complete_rejects_foreign_task_id(worker_env):
     """A worker cannot complete a task that isn't its own (#19534)."""
-    from hermes_cli import kanban_db as kb
+    from scarlight_cli import kanban_db as kb
     conn = kb.connect()
     try:
         other = kb.create_task(conn, title="sibling")
@@ -961,7 +961,7 @@ def test_worker_complete_rejects_foreign_task_id(worker_env):
 
 def test_worker_block_rejects_foreign_task_id(worker_env):
     """A worker cannot block a task that isn't its own (#19534)."""
-    from hermes_cli import kanban_db as kb
+    from scarlight_cli import kanban_db as kb
     conn = kb.connect()
     try:
         other = kb.create_task(conn, title="sibling")
@@ -984,7 +984,7 @@ def test_worker_block_rejects_foreign_task_id(worker_env):
 
 def test_worker_heartbeat_rejects_foreign_task_id(worker_env):
     """A worker cannot heartbeat a task that isn't its own (#19534)."""
-    from hermes_cli import kanban_db as kb
+    from scarlight_cli import kanban_db as kb
     conn = kb.connect()
     try:
         other = kb.create_task(conn, title="sibling")
@@ -1009,7 +1009,7 @@ def test_worker_can_comment_on_foreign_task(worker_env):
     so a future change accidentally adding ``_enforce_worker_task_ownership``
     to ``_handle_comment`` would fail CI immediately.
     """
-    from hermes_cli import kanban_db as kb
+    from scarlight_cli import kanban_db as kb
     conn = kb.connect()
     try:
         other = kb.create_task(conn, title="sibling")
@@ -1025,7 +1025,7 @@ def test_worker_can_comment_on_foreign_task(worker_env):
     assert d.get("ok") is True, f"cross-task comment must succeed: {d}"
 
     # The comment lands on the foreign task, attributed to the worker's
-    # HERMES_PROFILE — never to a caller-controlled string.
+    # SCARLIGHT_PROFILE — never to a caller-controlled string.
     conn = kb.connect()
     try:
         comments = kb.list_comments(conn, other)
@@ -1044,7 +1044,7 @@ def test_worker_unblock_rejects_foreign_task_id(worker_env):
     cross-task-ownership refusal. Either is fine — the property we're
     pinning is "worker cannot mutate foreign task via kanban_unblock".
     """
-    from hermes_cli import kanban_db as kb
+    from scarlight_cli import kanban_db as kb
     conn = kb.connect()
     try:
         other = kb.create_task(conn, title="blocked sibling", assignee="peer")
@@ -1078,8 +1078,8 @@ def test_worker_complete_own_task_still_works(worker_env):
 
 def test_worker_complete_rejects_stale_run_id(worker_env, monkeypatch):
     """A retried worker cannot complete the task using an old run token."""
-    from hermes_cli import kanban_db as kb
-    import hermes_cli.kanban_db as _kb
+    from scarlight_cli import kanban_db as kb
+    import scarlight_cli.kanban_db as _kb
 
     conn = kb.connect()
     try:
@@ -1095,7 +1095,7 @@ def test_worker_complete_rejects_stale_run_id(worker_env, monkeypatch):
         conn.close()
 
     from tools import kanban_tools as kt
-    monkeypatch.setenv("HERMES_KANBAN_RUN_ID", str(run1.id))
+    monkeypatch.setenv("SCARLIGHT_KANBAN_RUN_ID", str(run1.id))
     out = kt._handle_complete({"summary": "late stale completion"})
     d = json.loads(out)
     assert d.get("ok") is not True
@@ -1108,23 +1108,23 @@ def test_worker_complete_rejects_stale_run_id(worker_env, monkeypatch):
     finally:
         conn.close()
 
-    monkeypatch.setenv("HERMES_KANBAN_RUN_ID", str(run2.id))
+    monkeypatch.setenv("SCARLIGHT_KANBAN_RUN_ID", str(run2.id))
     out = kt._handle_complete({"summary": "current completion"})
     d = json.loads(out)
     assert d.get("ok") is True
 
 
 def test_orchestrator_complete_any_task_allowed(monkeypatch, tmp_path):
-    """Orchestrator profiles (no HERMES_KANBAN_TASK) can still complete
+    """Orchestrator profiles (no SCARLIGHT_KANBAN_TASK) can still complete
     any task via explicit task_id. The check only applies to workers."""
-    monkeypatch.delenv("HERMES_KANBAN_TASK", raising=False)
-    home = tmp_path / ".hermes"
+    monkeypatch.delenv("SCARLIGHT_KANBAN_TASK", raising=False)
+    home = tmp_path / ".scarlight"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("SCARLIGHT_HOME", str(home))
     from pathlib import Path as _P
     monkeypatch.setattr(_P, "home", lambda: tmp_path)
 
-    from hermes_cli import kanban_db as kb
+    from scarlight_cli import kanban_db as kb
     kb._INITIALIZED_PATHS.clear()
     kb.init_db()
     conn = kb.connect()

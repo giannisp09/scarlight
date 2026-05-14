@@ -137,14 +137,14 @@ class TestFirecrawlClientConfig:
                     api_url="https://firecrawl-gateway.nousresearch.com",
                 )
 
-    def test_nous_auth_token_respects_hermes_home_override(self, tmp_path):
-        """Auth lookup should read from HERMES_HOME/auth.json, not ~/.hermes/auth.json."""
+    def test_nous_auth_token_respects_scarlight_home_override(self, tmp_path):
+        """Auth lookup should read from SCARLIGHT_HOME/auth.json, not ~/.scarlight/auth.json."""
         real_home = tmp_path / "real-home"
-        (real_home / ".hermes").mkdir(parents=True)
+        (real_home / ".scarlight").mkdir(parents=True)
 
-        hermes_home = tmp_path / "hermes-home"
-        hermes_home.mkdir()
-        (hermes_home / "auth.json").write_text(json.dumps({
+        scarlight_home = tmp_path / "scarlight-home"
+        scarlight_home.mkdir()
+        (scarlight_home / "auth.json").write_text(json.dumps({
             "providers": {
                 "nous": {
                     "access_token": "nous-token",
@@ -154,7 +154,7 @@ class TestFirecrawlClientConfig:
 
         with patch.dict(os.environ, {
             "HOME": str(real_home),
-            "HERMES_HOME": str(hermes_home),
+            "SCARLIGHT_HOME": str(scarlight_home),
         }, clear=False):
             import tools.web_tools
             importlib.reload(tools.web_tools)
@@ -245,7 +245,7 @@ class TestBackendSelection:
     """Test suite for _get_backend() backend selection logic.
 
     The backend is configured via config.yaml (web.backend), set by
-    ``hermes tools``.  Falls back to key-based detection for legacy/manual
+    ``scarlight tools``.  Falls back to key-based detection for legacy/manual
     setups.
     """
 

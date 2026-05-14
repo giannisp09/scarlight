@@ -1,4 +1,4 @@
-# nix/overlays.nix — Expose pkgs.hermes-agent for external NixOS configs
+# nix/overlays.nix — Expose pkgs.scarlight-agent for external NixOS configs
 { inputs, ... }:
 {
   flake.overlays.default = final: _: {

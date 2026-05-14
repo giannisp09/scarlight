@@ -18,10 +18,10 @@ import pytest
 
 @pytest.fixture(autouse=True)
 def _isolate_home(tmp_path, monkeypatch):
-    hermes_home = tmp_path / ".hermes"
-    hermes_home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
-    yield hermes_home
+    scarlight_home = tmp_path / ".scarlight"
+    scarlight_home.mkdir()
+    monkeypatch.setenv("SCARLIGHT_HOME", str(scarlight_home))
+    yield scarlight_home
 
 
 # ---------------------------------------------------------------------------

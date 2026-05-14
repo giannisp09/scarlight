@@ -2,8 +2,8 @@
 #
 # callPackage auto-wires nixpkgs args; flake inputs are passed explicitly.
 # Users override via:
-#   pkgs.hermes-agent.override { extraPythonPackages = [...]; }
-#   pkgs.hermes-agent.override { extraDependencyGroups = [ "hindsight" ]; }
+#   pkgs.scarlight-agent.override { extraPythonPackages = [...]; }
+#   pkgs.scarlight-agent.override { extraDependencyGroups = [ "hindsight" ]; }
 {
   lib,
   stdenv,
