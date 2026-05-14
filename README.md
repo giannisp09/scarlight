@@ -1,195 +1,105 @@
-<p align="center">
-  <img src="assets/banner.png" alt="Hermes Agent" width="100%">
-</p>
+# Scarlight
 
-# Hermes Agent ☤
+> **A universal, self-improving agent harness for cyber superintelligence — offensive-security first.**
 
-<p align="center">
-  <a href="https://hermes-agent.nousresearch.com/docs/"><img src="https://img.shields.io/badge/Docs-hermes--agent.nousresearch.com-FFD700?style=for-the-badge" alt="Documentation"></a>
-  <a href="https://discord.gg/NousResearch"><img src="https://img.shields.io/badge/Discord-5865F2?style=for-the-badge&logo=discord&logoColor=white" alt="Discord"></a>
-  <a href="https://github.com/NousResearch/hermes-agent/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" alt="License: MIT"></a>
-  <a href="https://nousresearch.com"><img src="https://img.shields.io/badge/Built%20by-Nous%20Research-blueviolet?style=for-the-badge" alt="Built by Nous Research"></a>
-  <a href="README.zh-CN.md"><img src="https://img.shields.io/badge/Lang-中文-red?style=for-the-badge" alt="中文"></a>
-</p>
-
-**The self-improving AI agent built by [Nous Research](https://nousresearch.com).** It's the only agent with a built-in learning loop — it creates skills from experience, improves them during use, nudges itself to persist knowledge, searches its own past conversations, and builds a deepening model of who you are across sessions. Run it on a $5 VPS, a GPU cluster, or serverless infrastructure that costs nearly nothing when idle. It's not tied to your laptop — talk to it from Telegram while it works on a cloud VM.
-
-Use any model you want — [Nous Portal](https://portal.nousresearch.com), [OpenRouter](https://openrouter.ai) (200+ models), [NovitaAI](https://novita.ai) (AI-native cloud for Model API, Agent Sandbox, and GPU Cloud), [NVIDIA NIM](https://build.nvidia.com) (Nemotron), [Xiaomi MiMo](https://platform.xiaomimimo.com), [z.ai/GLM](https://z.ai), [Kimi/Moonshot](https://platform.moonshot.ai), [MiniMax](https://www.minimax.io), [Hugging Face](https://huggingface.co), OpenAI, or your own endpoint. Switch with `hermes model` — no code changes, no lock-in.
-
-<table>
-<tr><td><b>A real terminal interface</b></td><td>Full TUI with multiline editing, slash-command autocomplete, conversation history, interrupt-and-redirect, and streaming tool output.</td></tr>
-<tr><td><b>Lives where you do</b></td><td>Telegram, Discord, Slack, WhatsApp, Signal, and CLI — all from a single gateway process. Voice memo transcription, cross-platform conversation continuity.</td></tr>
-<tr><td><b>A closed learning loop</b></td><td>Agent-curated memory with periodic nudges. Autonomous skill creation after complex tasks. Skills self-improve during use. FTS5 session search with LLM summarization for cross-session recall. <a href="https://github.com/plastic-labs/honcho">Honcho</a> dialectic user modeling. Compatible with the <a href="https://agentskills.io">agentskills.io</a> open standard.</td></tr>
-<tr><td><b>Scheduled automations</b></td><td>Built-in cron scheduler with delivery to any platform. Daily reports, nightly backups, weekly audits — all in natural language, running unattended.</td></tr>
-<tr><td><b>Delegates and parallelizes</b></td><td>Spawn isolated subagents for parallel workstreams. Write Python scripts that call tools via RPC, collapsing multi-step pipelines into zero-context-cost turns.</td></tr>
-<tr><td><b>Runs anywhere, not just your laptop</b></td><td>Seven terminal backends — local, Docker, SSH, Singularity, Modal, Daytona, and Vercel Sandbox. Daytona and Modal offer serverless persistence — your agent's environment hibernates when idle and wakes on demand, costing nearly nothing between sessions. Run it on a $5 VPS or a GPU cluster.</td></tr>
-<tr><td><b>Research-ready</b></td><td>Batch trajectory generation, Atropos RL environments, trajectory compression for training the next generation of tool-calling models.</td></tr>
-</table>
+Scarlight is an open-source agent harness for offensive security work: authorized penetration testing, bug bounty hunting, CTF, red-team operations, and security research. It is opinionated, sandboxed, scope-aware, and designed to *compound* — the harness, the skill library, and the agent population get measurably better with use.
 
 ---
 
-## Quick Install
+## Why Scarlight exists
 
-### Linux, macOS, WSL2, Termux
+The 2024–2026 offensive-security AI boom produced 70+ open-source agents — CAI, HackSynth, PentestGPT, HackingBuddyGPT, ctf-agent, RapidPen, AutoPentester, HexStrike — plus closed platforms like XBOW. But there is no canonical *harness*: an opinionated runtime that treats offensive security as a first-class domain, applies XBOW-style coordinator/worker scaling, Voyager-style skill libraries, Darwin-Gödel-Machine-style self-modification, and the security boundaries this work requires.
 
-```bash
-curl -fsSL https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scripts/install.sh | bash
-```
+Most existing tools are model wrappers. They hallucinate findings, get tunnel-visioned, lose context, exfiltrate credentials into prompts, and never get better between sessions. They are inadequate for serious work and dangerous for autonomous deployment.
 
-### Windows (native, PowerShell) — Early Beta
-
-> **Heads up:** Native Windows support is **early beta**. It installs and runs, but hasn't been road-tested as broadly as our Linux/macOS/WSL2 paths. Please [file issues](https://github.com/NousResearch/hermes-agent/issues) when you hit rough edges. For the most battle-tested Windows setup today, run the Linux/macOS one-liner above inside **WSL2**.
-
-Run this in PowerShell:
-
-```powershell
-irm https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scripts/install.ps1 | iex
-```
-
-The installer handles everything: uv, Python 3.11, Node.js, ripgrep, ffmpeg, **and a portable Git Bash** (MinGit, unpacked to `%LOCALAPPDATA%\hermes\git` — no admin required, completely isolated from any system Git install).  Hermes uses this bundled Git Bash to run shell commands.
-
-If you already have Git installed, the installer detects it and uses that instead.  Otherwise a ~45MB MinGit download is all you need — it won't touch or interfere with any system Git.
-
-> **Android / Termux:** The tested manual path is documented in the [Termux guide](https://hermes-agent.nousresearch.com/docs/getting-started/termux). On Termux, Hermes installs a curated `.[termux]` extra because the full `.[all]` extra currently pulls Android-incompatible voice dependencies.
->
-> **Windows:** Native Windows is supported as an **early beta** — the PowerShell one-liner above installs everything, but expect rough edges and please file issues when you hit them. If you'd rather use WSL2 (our most battle-tested Windows path), the Linux command works there too. Native Windows install lives under `%LOCALAPPDATA%\hermes`; WSL2 installs under `~/.hermes` as on Linux.  The only Hermes feature that currently needs WSL2 specifically is the browser-based dashboard chat pane (it uses a POSIX PTY — classic CLI and gateway both run natively).
-
-After installation:
-
-```bash
-source ~/.bashrc    # reload shell (or: source ~/.zshrc)
-hermes              # start chatting!
-```
+Scarlight is the harness that fixes this. It is to offensive security what Claude Code / OpenCode are to coding — except self-improving.
 
 ---
 
-## Getting Started
+## The thesis
 
-```bash
-hermes              # Interactive CLI — start a conversation
-hermes model        # Choose your LLM provider and model
-hermes tools        # Configure which tools are enabled
-hermes config set   # Set individual config values
-hermes gateway      # Start the messaging gateway (Telegram, Discord, etc.)
-hermes setup        # Run the full setup wizard (configures everything at once)
-hermes claw migrate # Migrate from OpenClaw (if coming from OpenClaw)
-hermes update       # Update to the latest version
-hermes doctor       # Diagnose any issues
+**Harness quality > model quality.** Anthropic, LangChain, and OpenAI engineering teams have published the same finding independently: at the frontier, harness improvements move benchmarks more than model upgrades do. Scarlight bets on this: a great harness with a B-grade frontier model beats a vanilla loop with a frontier model.
+
+**Compounding skill library > one-shot prompting.** Voyager's skill library and Hermes Agent's autonomous skill creation prove that agents that *write down what worked* and *retrieve it next time* outpace stateless agents within hours.
+
+**Deterministic validation > LLM trust.** XBOW reached #1 on HackerOne by separating "AI discovers" from "deterministic logic validates". Hallucinated findings are the #1 failure of offensive AI; the only durable defense is a verifier.
+
+**Coordinator + ephemeral workers > monolithic agent.** Thousands of short-lived workers, each with fresh context and a narrow objective, beat one long-running agent that accumulates bias and context collapse.
+
+**Self-improvement > static capability.** Darwin Gödel Machine showed +30 percentage points on SWE-bench by letting the agent rewrite its own harness. Applied to offensive security with a benchmark like Cybench as the reward signal, this is the path to superintelligent capability.
+
+---
+
+## What Scarlight is not
+
+- **Not a script kiddie tool.** Default-deny network policy, signed Rules of Engagement, scope enforcement at the gateway. If you try to point it at a target you don't own and haven't authorized, it refuses.
+- **Not a model.** Scarlight is model-agnostic. Frontier models (Claude, GPT, Gemini), open-weights (Llama, Qwen, DeepSeek), and local models are all first-class.
+- **Not a framework.** Scarlight is a harness — opinionated control flow, runtime, and infrastructure. You write skills and policies, not glue.
+- **Not closed source.** Apache 2.0 core, with an explicit Authorized Use Policy. See [`CODE_OF_USE.md`](./CODE_OF_USE.md).
+
+---
+
+## Long-range vision: the 11 pillars (parked)
+
+> The 11-pillar design and the ADRs below are an **earlier architecture exploration**, kept in [`docs/`](./docs/) as reference. They are **parked — not v1's committed scope.** v1 is the lean hermes-agent fork-and-adapt described in [`specs/`](./specs/); if `specs/` and `docs/` disagree, `specs/` wins. The sections below describe where Scarlight may go, not what v1 builds.
+
+| # | Pillar | Job |
+|---|--------|-----|
+| 1 | **Hydra** — Cognitive Core | Multi-model orchestration, planner/summarizer, model racing, **local-first model tiering** |
+| 2 | **Forge** — Control Plane | Stateless-reducer loop, coordinator + ephemeral workers, pause/resume, **code-mode subloop** |
+| 3 | **Arsenal** — Execution Substrate | MicroVM sandboxes, pre-loaded toolchain (incl. coding tools), MCP-native tools |
+| 4 | **Codex** — Skill Library | Voyager-style executable skills, autonomous skill creation, composable |
+| 5 | **Mnemos** — Memory & Context | Episodic + semantic + target-graph memory, cross-session FTS |
+| 6 | **Oracle** — Deterministic Validation | Verifiers, proof-of-exploit, non-destructive challenge generation |
+| 7 | **Phoenix** — Self-Improvement Engine | **Tiered** harness self-modification (T0–T3), archive, anti-reward-hacking |
+| 8 | **Crucible** — Evaluation Harness | Cybench/CAIBench/HackSynth-compatible, regression guards, **verifiers-as-environments** |
+| 9 | **Aegis** — Safety, Authorization, Scope | Signed ROE, target allowlists, default-deny egress, capability tokens, **air-gapped mode** |
+| 10 | **Lighthouse** — Observability & Forensics | OpenTelemetry tracing, signed audit log, replayable sessions, **trajectory export for Anvil** |
+| 11 | **Anvil** — RL Training & Post-Training | Opt-in RLVR via `prime-rl` + `verifiers` + Crucible; SFT/DPO/GRPO/DAPO; federated training |
+
+See [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md) for the original ten pillars in depth, [`docs/pillars/anvil.md`](./docs/pillars/anvil.md) for Pillar 11, and [`docs/decisions/`](./docs/decisions/) for the architecture decision records (ADRs 0004–0007) that refine the design.
+
+## Key architectural decisions (parked exploration)
+
+- **[ADR 0001](./docs/decisions/0001-license-apache-2.md)** — Apache 2.0 with separate Authorized Use Policy.
+- **[ADR 0002](./docs/decisions/0002-language-split.md)** — Python control plane, Rust trust path, TypeScript UI, WASM skill sandbox.
+- **[ADR 0003](./docs/decisions/0003-mcp-native.md)** — MCP-native tools; open protocols.
+- **[ADR 0004](./docs/decisions/0004-coding-mode.md)** — Code-fluent, not a coding harness; code-mode subloop, two-way MCP interop with Claude Code / OpenCode.
+- **[ADR 0005](./docs/decisions/0005-self-modification-tiers.md)** — Self-modification is tiered (T0–T4); Phoenix can mutate skills/strategy/harness code but **cannot mutate Aegis or Lighthouse**.
+- **[ADR 0006](./docs/decisions/0006-local-first.md)** — Local-first; `air_gapped` / `local_default` / `hybrid` / `cloud` deployment modes; vLLM / SGLang / Ollama / MLX; recommended local models per 2026 benchmarks.
+- **[ADR 0007](./docs/decisions/0007-rl-training-opt-in.md)** — Anvil: opt-in RL training; `prime-rl` + `verifiers` foundation; federated gradient contribution.
+- **[ADR 0008](./docs/decisions/0008-forge-topology.md)** — Forge topology: adaptive bounded hierarchy with dynamic fan-out; max depth 3; five topology profiles (linear / parallel-flat / hierarchical / hybrid / swarm-lateral); shared Mnemos target graph + engagement bus as the lateral substrate.
+
+---
+
+## Repository layout
+
+```
+scarlight/
+├── README.md                 — this file
+├── LICENSE                   — Apache 2.0
+├── CODE_OF_USE.md            — Authorized Use Policy (non-negotiable for contributors)
+├── AGENTS.md                 — standing context for any agent acting on this repo
+├── specs/                    — SDD product layer — the committed v1 plan (source of truth)
+│   ├── mission.md            — what Scarlight is, who it's for, what v1 is/isn't
+│   ├── tech-stack.md         — the hermes-agent fork: keep / change / remove / add
+│   ├── roadmap.md            — Phase 0 (fork) → Phase 1 (adapt) → deferred revisit
+│   ├── fork-runbook.md       — concrete step-ordered fork procedure
+│   └── README.md             — specs/ index
+├── docs/                     — parked architecture exploration (reference only, not v1 scope)
+│   ├── ARCHITECTURE.md       — 11-pillar design (parked)
+│   ├── PRIOR_ART.md          — research survey
+│   ├── THREAT_MODEL.md       — threat-model exploration
+│   ├── PILLARS.md            — pillar one-pager (parked)
+│   ├── pillars/              — one doc per pillar (parked)
+│   └── decisions/            — ADRs (architecture decision records)
+└── examples/                 — reference engagement configs (CTF, lab, bug-bounty)
 ```
 
-📖 **[Full documentation →](https://hermes-agent.nousresearch.com/docs/)**
-
-## CLI vs Messaging Quick Reference
-
-Hermes has two entry points: start the terminal UI with `hermes`, or run the gateway and talk to it from Telegram, Discord, Slack, WhatsApp, Signal, or Email. Once you're in a conversation, many slash commands are shared across both interfaces.
-
-| Action | CLI | Messaging platforms |
-|---------|-----|---------------------|
-| Start chatting | `hermes` | Run `hermes gateway setup` + `hermes gateway start`, then send the bot a message |
-| Start fresh conversation | `/new` or `/reset` | `/new` or `/reset` |
-| Change model | `/model [provider:model]` | `/model [provider:model]` |
-| Set a personality | `/personality [name]` | `/personality [name]` |
-| Retry or undo the last turn | `/retry`, `/undo` | `/retry`, `/undo` |
-| Compress context / check usage | `/compress`, `/usage`, `/insights [--days N]` | `/compress`, `/usage`, `/insights [days]` |
-| Browse skills | `/skills` or `/<skill-name>` | `/<skill-name>` |
-| Interrupt current work | `Ctrl+C` or send a new message | `/stop` or send a new message |
-| Platform-specific status | `/platforms` | `/status`, `/sethome` |
-
-For the full command lists, see the [CLI guide](https://hermes-agent.nousresearch.com/docs/user-guide/cli) and the [Messaging Gateway guide](https://hermes-agent.nousresearch.com/docs/user-guide/messaging).
+v1 is a fork-and-adapt of [`nousresearch/hermes-agent`](https://github.com/nousresearch/hermes-agent). See [`specs/roadmap.md`](./specs/roadmap.md) for the plan and [`specs/fork-runbook.md`](./specs/fork-runbook.md) for the procedure.
 
 ---
 
-## Documentation
+## Status
 
-All documentation lives at **[hermes-agent.nousresearch.com/docs](https://hermes-agent.nousresearch.com/docs/)**:
-
-| Section | What's Covered |
-|---------|---------------|
-| [Quickstart](https://hermes-agent.nousresearch.com/docs/getting-started/quickstart) | Install → setup → first conversation in 2 minutes |
-| [CLI Usage](https://hermes-agent.nousresearch.com/docs/user-guide/cli) | Commands, keybindings, personalities, sessions |
-| [Configuration](https://hermes-agent.nousresearch.com/docs/user-guide/configuration) | Config file, providers, models, all options |
-| [Messaging Gateway](https://hermes-agent.nousresearch.com/docs/user-guide/messaging) | Telegram, Discord, Slack, WhatsApp, Signal, Home Assistant |
-| [Security](https://hermes-agent.nousresearch.com/docs/user-guide/security) | Command approval, DM pairing, container isolation |
-| [Tools & Toolsets](https://hermes-agent.nousresearch.com/docs/user-guide/features/tools) | 40+ tools, toolset system, terminal backends |
-| [Skills System](https://hermes-agent.nousresearch.com/docs/user-guide/features/skills) | Procedural memory, Skills Hub, creating skills |
-| [Memory](https://hermes-agent.nousresearch.com/docs/user-guide/features/memory) | Persistent memory, user profiles, best practices |
-| [MCP Integration](https://hermes-agent.nousresearch.com/docs/user-guide/features/mcp) | Connect any MCP server for extended capabilities |
-| [Cron Scheduling](https://hermes-agent.nousresearch.com/docs/user-guide/features/cron) | Scheduled tasks with platform delivery |
-| [Context Files](https://hermes-agent.nousresearch.com/docs/user-guide/features/context-files) | Project context that shapes every conversation |
-| [Architecture](https://hermes-agent.nousresearch.com/docs/developer-guide/architecture) | Project structure, agent loop, key classes |
-| [Contributing](https://hermes-agent.nousresearch.com/docs/developer-guide/contributing) | Development setup, PR process, code style |
-| [CLI Reference](https://hermes-agent.nousresearch.com/docs/reference/cli-commands) | All commands and flags |
-| [Environment Variables](https://hermes-agent.nousresearch.com/docs/reference/environment-variables) | Complete env var reference |
-
----
-
-## Migrating from OpenClaw
-
-If you're coming from OpenClaw, Hermes can automatically import your settings, memories, skills, and API keys.
-
-**During first-time setup:** The setup wizard (`hermes setup`) automatically detects `~/.openclaw` and offers to migrate before configuration begins.
-
-**Anytime after install:**
-
-```bash
-hermes claw migrate              # Interactive migration (full preset)
-hermes claw migrate --dry-run    # Preview what would be migrated
-hermes claw migrate --preset user-data   # Migrate without secrets
-hermes claw migrate --overwrite  # Overwrite existing conflicts
-```
-
-What gets imported:
-- **SOUL.md** — persona file
-- **Memories** — MEMORY.md and USER.md entries
-- **Skills** — user-created skills → `~/.hermes/skills/openclaw-imports/`
-- **Command allowlist** — approval patterns
-- **Messaging settings** — platform configs, allowed users, working directory
-- **API keys** — allowlisted secrets (Telegram, OpenRouter, OpenAI, Anthropic, ElevenLabs)
-- **TTS assets** — workspace audio files
-- **Workspace instructions** — AGENTS.md (with `--workspace-target`)
-
-See `hermes claw migrate --help` for all options, or use the `openclaw-migration` skill for an interactive agent-guided migration with dry-run previews.
-
----
-
-## Contributing
-
-We welcome contributions! See the [Contributing Guide](https://hermes-agent.nousresearch.com/docs/developer-guide/contributing) for development setup, code style, and PR process.
-
-Quick start for contributors — clone and go with `setup-hermes.sh`:
-
-```bash
-git clone https://github.com/NousResearch/hermes-agent.git
-cd hermes-agent
-./setup-hermes.sh     # installs uv, creates venv, installs .[all], symlinks ~/.local/bin/hermes
-./hermes              # auto-detects the venv, no need to `source` first
-```
-
-Manual path (equivalent to the above):
-
-```bash
-curl -LsSf https://astral.sh/uv/install.sh | sh
-uv venv .venv --python 3.11
-source .venv/bin/activate
-uv pip install -e ".[all,dev]"
-scripts/run_tests.sh
-```
-
-> **RL Training (optional):** The RL/Atropos integration (`environments/`) — see [`CONTRIBUTING.md`](https://github.com/NousResearch/hermes-agent/blob/main/CONTRIBUTING.md#development-setup) for the full setup.
-
----
-
-## Community
-
-- 💬 [Discord](https://discord.gg/NousResearch)
-- 📚 [Skills Hub](https://agentskills.io)
-- 🐛 [Issues](https://github.com/NousResearch/hermes-agent/issues)
-- 🔌 [HermesClaw](https://github.com/AaronWong1999/hermesclaw) — Community WeChat bridge: Run Hermes Agent and OpenClaw on the same WeChat account.
-
----
-
-## License
-
-MIT — see [LICENSE](LICENSE).
-
-Built by [Nous Research](https://nousresearch.com).
+**Pre-implementation.** v1 is a lean fork-and-adapt of hermes-agent; [`specs/`](./specs/) is the committed source of truth. The 11-pillar design in [`docs/`](./docs/) is earlier exploration — parked, not committed scope.
