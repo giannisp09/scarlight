@@ -49,8 +49,6 @@ TOOL_KIND_MAP: Dict[str, ToolKind] = {
     # Agent internals
     "delegate_task": "execute",
     "vision_analyze": "read",
-    "image_generate": "execute",
-    "text_to_speech": "execute",
     # Thinking / meta
     "_thinking": "think",
 }
@@ -65,16 +63,10 @@ _POLISHED_TOOLS = {
     "skill_view", "skills_list", "skill_manage", "web_search", "web_extract",
     "browser_navigate", "browser_click", "browser_type", "browser_press", "browser_scroll",
     "browser_back", "browser_snapshot", "browser_console", "browser_get_images", "browser_vision",
-    "vision_analyze", "image_generate", "text_to_speech",
+    "vision_analyze",
     # Schedulers / platform integrations
-    "cronjob", "send_message", "clarify", "discord", "discord_admin",
-    "ha_list_entities", "ha_get_state", "ha_list_services", "ha_call_service",
-    "feishu_doc_read", "feishu_drive_list_comments", "feishu_drive_list_comment_replies",
-    "feishu_drive_reply_comment", "feishu_drive_add_comment",
-    "kanban_create", "kanban_show", "kanban_comment", "kanban_complete",
-    "kanban_block", "kanban_link", "kanban_heartbeat",
-    "yb_query_group_info", "yb_query_group_members", "yb_search_sticker",
-    "yb_send_dm", "yb_send_sticker", "mixture_of_agents",
+    "cronjob", "clarify",
+    "mixture_of_agents",
 }
 
 
@@ -170,9 +162,6 @@ def build_tool_title(tool_name: str, args: Dict[str, Any]) -> str:
         return "browser images"
     if tool_name == "vision_analyze":
         return f"analyze image: {str(args.get('question', '?'))[:50]}"
-    if tool_name == "image_generate":
-        prompt = str(args.get("prompt") or args.get("description") or "").strip()
-        return f"generate image: {prompt[:50]}" if prompt else "generate image"
     if tool_name == "cronjob":
         action = str(args.get("action") or "manage").strip() or "manage"
         job_id = str(args.get("job_id") or args.get("id") or "").strip()
@@ -738,7 +727,6 @@ def _build_polished_completion_content(
         "browser_vision": lambda: _format_browser_result(tool_name, result, function_args),
         "browser_get_images": lambda: _format_browser_result(tool_name, result, function_args),
         "vision_analyze": lambda: _format_media_or_cron_result(tool_name, result),
-        "image_generate": lambda: _format_media_or_cron_result(tool_name, result),
         "cronjob": lambda: _format_media_or_cron_result(tool_name, result),
     }.get(tool_name)
     if formatter is None and tool_name in _POLISHED_TOOLS:

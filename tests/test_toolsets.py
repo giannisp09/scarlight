@@ -219,7 +219,7 @@ class TestToolsetConsistency:
         on scarlight-discord, gated on DISCORD_BOT_TOKEN) are allowed on top —
         the invariant is that the core set is identical across platforms.
         """
-        platforms = ["scarlight-cli", "scarlight-telegram", "scarlight-discord", "scarlight-whatsapp", "scarlight-slack", "scarlight-signal", "scarlight-homeassistant"]
+        platforms = ["scarlight-cli", "scarlight-telegram", "scarlight-discord", "scarlight-whatsapp", "scarlight-slack", "scarlight-signal"]
         tool_sets = [set(TOOLSETS[p]["tools"]) for p in platforms]
         # All platforms must contain the shared core; platform-specific
         # extras are OK (subset check, not equality).

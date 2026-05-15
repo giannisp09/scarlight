@@ -4795,6 +4795,22 @@ feishu = [
 firecrawl = [
     { name = "firecrawl-py" },
 ]
+gateway = [
+    { name = "aiohttp" },
+    { name = "aiohttp-socks" },
+    { name = "aiosqlite" },
+    { name = "alibabacloud-dingtalk" },
+    { name = "asyncpg" },
+    { name = "dingtalk-stream" },
+    { name = "discord-py", extra = ["voice"] },
+    { name = "lark-oapi" },
+    { name = "markdown" },
+    { name = "mautrix", extra = ["encryption"] },
+    { name = "python-telegram-bot", extra = ["webhooks"] },
+    { name = "qrcode" },
+    { name = "slack-bolt" },
+    { name = "slack-sdk" },
+]
 google = [
     { name = "google-api-python-client" },
     { name = "google-auth-httplib2" },
@@ -4971,16 +4987,22 @@ requires-dist = [
     { name = "scarlight", extras = ["cron"], marker = "extra == 'all'" },
     { name = "scarlight", extras = ["cron"], marker = "extra == 'termux'" },
     { name = "scarlight", extras = ["dev"], marker = "extra == 'all'" },
+    { name = "scarlight", extras = ["dingtalk"], marker = "extra == 'gateway'" },
+    { name = "scarlight", extras = ["feishu"], marker = "extra == 'gateway'" },
     { name = "scarlight", extras = ["google"], marker = "extra == 'all'" },
     { name = "scarlight", extras = ["google"], marker = "extra == 'termux-all'" },
     { name = "scarlight", extras = ["homeassistant"], marker = "extra == 'all'" },
     { name = "scarlight", extras = ["homeassistant"], marker = "extra == 'termux-all'" },
     { name = "scarlight", extras = ["honcho"], marker = "extra == 'termux'" },
+    { name = "scarlight", extras = ["matrix"], marker = "extra == 'gateway'" },
     { name = "scarlight", extras = ["mcp"], marker = "extra == 'all'" },
     { name = "scarlight", extras = ["mcp"], marker = "extra == 'termux'" },
+    { name = "scarlight", extras = ["messaging"], marker = "extra == 'gateway'" },
     { name = "scarlight", extras = ["pty"], marker = "extra == 'all'" },
     { name = "scarlight", extras = ["pty"], marker = "extra == 'termux'" },
+    { name = "scarlight", extras = ["slack"], marker = "extra == 'gateway'" },
     { name = "scarlight", extras = ["sms"], marker = "extra == 'all'" },
+    { name = "scarlight", extras = ["sms"], marker = "extra == 'gateway'" },
     { name = "scarlight", extras = ["sms"], marker = "extra == 'termux-all'" },
     { name = "scarlight", extras = ["termux"], marker = "extra == 'termux-all'" },
     { name = "scarlight", extras = ["web"], marker = "extra == 'all'" },
@@ -5003,7 +5025,7 @@ requires-dist = [
     { name = "yc-bench", marker = "python_full_version >= '3.12' and extra == 'yc-bench'", git = "https://github.com/collinear-ai/yc-bench.git?rev=bfb0c88062450f46341bd9a5298903fc2e952a5c" },
     { name = "youtube-transcript-api", marker = "extra == 'youtube'", specifier = "==1.2.4" },
 ]
-provides-extras = ["anthropic", "exa", "firecrawl", "parallel-web", "fal", "edge-tts", "modal", "daytona", "vercel", "hindsight", "dev", "messaging", "cron", "slack", "matrix", "cli", "tts-premium", "voice", "pty", "honcho", "mcp", "homeassistant", "sms", "computer-use", "acp", "bedrock", "termux", "termux-all", "dingtalk", "feishu", "google", "youtube", "web", "rl", "yc-bench", "all"]
+provides-extras = ["anthropic", "exa", "firecrawl", "parallel-web", "fal", "edge-tts", "modal", "daytona", "vercel", "hindsight", "dev", "messaging", "cron", "slack", "matrix", "gateway", "cli", "tts-premium", "voice", "pty", "honcho", "mcp", "homeassistant", "sms", "computer-use", "acp", "bedrock", "termux", "termux-all", "dingtalk", "feishu", "google", "youtube", "web", "rl", "yc-bench", "all"]
 
 [[package]]
 name = "sentry-sdk"

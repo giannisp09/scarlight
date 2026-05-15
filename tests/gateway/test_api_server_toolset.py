@@ -28,7 +28,7 @@ class TestScarlightApiServerToolset:
         expected = [
             "terminal", "process",
             "read_file", "write_file", "patch", "search_files",
-            "vision_analyze", "image_generate",
+            "vision_analyze",
             "execute_code", "delegate_task",
             "todo", "memory", "session_search", "cronjob",
         ]
@@ -41,11 +41,6 @@ class TestScarlightApiServerToolset:
                       "browser_type", "browser_scroll", "browser_back",
                       "browser_press"]:
             assert tool in tools, f"Missing browser tool: {tool}"
-
-    def test_toolset_includes_homeassistant_tools(self):
-        tools = resolve_toolset("scarlight-api-server")
-        for tool in ["ha_list_entities", "ha_get_state", "ha_list_services", "ha_call_service"]:
-            assert tool in tools, f"Missing HA tool: {tool}"
 
     def test_toolset_excludes_clarify(self):
         tools = resolve_toolset("scarlight-api-server")
