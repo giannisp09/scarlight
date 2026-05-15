@@ -343,3 +343,28 @@ OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
 OPENROUTER_MODELS_URL = f"{OPENROUTER_BASE_URL}/models"
 
 AI_GATEWAY_BASE_URL = "https://ai-gateway.vercel.sh/v1"
+
+# Default terminal-sandbox container image. Used by every container backend
+# (docker, singularity, modal, daytona) when the user picks one in
+# `terminal.backend` and does not override `*_image` in cli-config.yaml.
+#
+# Why Kali: Scarlight's domain is offensive security; the agent's terminal
+# tool is the dispatch surface for offensive binaries (nmap, gobuster,
+# sqlmap, …).  The upstream hermes-agent default was a coding-oriented
+# python+nodejs image, which is the wrong substrate for this product.
+#
+# Why `kali-last-release` minimal: kali official Docker images are minimal
+# by design (~120MB).  Tools install on first use via `apt install -y
+# <tool>` — kept minimal so first-pull is fast and skill files declare
+# what they need (see skills/offensive/*/SKILL.md `prerequisites.commands`).
+# A `-large` / `-headless` tools-included variant does not exist on the
+# official registry.
+#
+# Why digest-pinned: reproducibility.  Bumping requires re-resolving the
+# manifest-list digest (`docker buildx imagetools inspect <ref>` — NOT
+# `docker manifest inspect`, which only shows per-arch entries), then
+# updating this constant.
+DEFAULT_TERMINAL_IMAGE = (
+    "kalilinux/kali-last-release"
+    "@sha256:59a4bea68a92b8e2f7b2490345a49784eb11264ceb7deece037e543b2a7dfd73"
+)
