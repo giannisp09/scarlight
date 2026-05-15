@@ -38,19 +38,22 @@ Supporting context:
 
 ## Current repository state
 
-**Pre-implementation.** The hermes-agent fork has not landed yet. The tree today is the SDD product layer plus parked reference material:
+**Phase 0 complete; Phase 1 in progress.** The `hermes-agent` fork has landed and been rebranded — fork-runbook Steps 1–2 are done: the SDD product layer landed on top of upstream `hermes-agent` (history intact), the repo relicensed to Apache-2.0 with a `NOTICE` retaining hermes-agent's MIT attribution, and `hermes` → `scarlight` rebranded throughout (`scarlight_cli/`, the `scarlight` entry point, `~/.scarlight/`, package name, imports, config paths).
+
+The codebase is now **hermes-agent's module layout, rebranded** — `agent/`, `providers/`, `plugins/`, `environments/`, `skills/`, `tools/`, `scarlight_cli/`, `gateway/`, `docker/`, and so on — *not* the 11-pillar package layout from `docs/`. See [`specs/tech-stack.md`](./specs/tech-stack.md) for each module's fate (keep / re-aim / dormant / remove). Layered on top is Scarlight's own product layer:
 
 ```
 AGENTS.md        — this file
 README.md        — project pitch
 CODE_OF_USE.md   — Authorized Use Policy
-LICENSE
+LICENSE          — Apache-2.0
+NOTICE           — hermes-agent MIT attribution (Scarlight is a derivative work)
 specs/           — committed SDD product layer (source of truth)
 docs/            — parked 11-pillar architecture exploration (reference only)
-examples/        — reference engagement configs (currently empty)
+examples/        — reference engagement configs
 ```
 
-Once Phase 0 runs, the codebase becomes **hermes-agent's module layout** — `agent/`, `memory/`, `providers/`, `plugins/`, `environments/`, `skills/`, `tools/`, `scarlight_cli/`, `gateway/`, `docker/`, and so on — *not* the 11-pillar package layout from `docs/`. See [`specs/tech-stack.md`](./specs/tech-stack.md) for each module's fate (keep / re-aim / dormant / remove).
+**Next:** fork-runbook Steps 3–9 — Phase 1: trim to the offensive surface, re-aim the skill library and tool layer at offensive security, verify the self-improving core, add the authorization guard, and drive one engagement end-to-end.
 
 ---
 
@@ -110,6 +113,6 @@ Full detail is in [`specs/tech-stack.md`](./specs/tech-stack.md). In brief:
 
 ## How to read the codebase
 
-There is no code yet — the fork has not landed. Until it does, `specs/` is the source of truth and the only thing to read.
+The fork has landed. `specs/` remains the source of truth for *intent* — what v1 is and is not — but the codebase itself is now hermes-agent's, rebranded.
 
-Once Phase 0 completes, the entry points are hermes-agent's, rebranded: the `scarlight` CLI in `scarlight_cli/`, the agent loop in `agent/`, memory in `memory/`, the skill library in `skills/`, the tool layer in `tools/`. The parked `docs/` paths (`scarlight/forge/…`, `scarlight/aegis/…`, etc.) do not exist and will not — they describe the parked design, not v1.
+The entry points are hermes-agent's, rebranded: the `scarlight` CLI in `scarlight_cli/`, the agent loop in `agent/`, the skill library in `skills/`, the tool layer in `tools/`, memory in `plugins/memory/`. The parked `docs/` paths (`scarlight/forge/…`, `scarlight/aegis/…`, etc.) do not exist and will not — they describe the parked design, not v1.

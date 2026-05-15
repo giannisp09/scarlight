@@ -74,10 +74,13 @@ See [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md) for the original ten pillar
 
 ## Repository layout
 
+v1 is a fork-and-adapt of [`nousresearch/hermes-agent`](https://github.com/nousresearch/hermes-agent): the codebase is hermes-agent's module layout, rebranded `hermes` → `scarlight` (`agent/`, `providers/`, `plugins/`, `environments/`, `skills/`, `tools/`, `scarlight_cli/`, `gateway/`, `docker/`, …). Layered on top is Scarlight's own product layer:
+
 ```
 scarlight/
 ├── README.md                 — this file
 ├── LICENSE                   — Apache 2.0
+├── NOTICE                    — hermes-agent MIT attribution (Scarlight is a derivative work)
 ├── CODE_OF_USE.md            — Authorized Use Policy (non-negotiable for contributors)
 ├── AGENTS.md                 — standing context for any agent acting on this repo
 ├── specs/                    — SDD product layer — the committed v1 plan (source of truth)
@@ -96,10 +99,10 @@ scarlight/
 └── examples/                 — reference engagement configs (CTF, lab, bug-bounty)
 ```
 
-v1 is a fork-and-adapt of [`nousresearch/hermes-agent`](https://github.com/nousresearch/hermes-agent). See [`specs/roadmap.md`](./specs/roadmap.md) for the plan and [`specs/fork-runbook.md`](./specs/fork-runbook.md) for the procedure.
+See [`specs/roadmap.md`](./specs/roadmap.md) for the plan and [`specs/fork-runbook.md`](./specs/fork-runbook.md) for the procedure.
 
 ---
 
 ## Status
 
-**Pre-implementation.** v1 is a lean fork-and-adapt of hermes-agent; [`specs/`](./specs/) is the committed source of truth. The 11-pillar design in [`docs/`](./docs/) is earlier exploration — parked, not committed scope.
+**Phase 0 complete — Phase 1 in progress.** The hermes-agent fork has landed and been rebranded (`hermes` → `scarlight`, relicensed Apache-2.0); `uv sync` builds and `scarlight --help` runs. Next is Phase 1 — trimming to the offensive surface, re-aiming the skill library and tool layer at offensive security, adding a minimal authorization guard, and driving one engagement end-to-end. [`specs/`](./specs/) is the committed source of truth; [`specs/fork-runbook.md`](./specs/fork-runbook.md) tracks the step-ordered procedure. The 11-pillar design in [`docs/`](./docs/) is earlier exploration — parked, not committed scope.
