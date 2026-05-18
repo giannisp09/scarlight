@@ -34,10 +34,21 @@ operator_acknowledgment:
   code_of_use_version: "1"
 
 # Authorized targets — hostnames, IPs, CIDR ranges, or URLs you have
-# permission to test. The list MUST be non-empty. Be specific. The guard
-# does not currently enforce per-target authorization on individual tool
-# calls (that is a planned follow-up); for v1 this list is documentation
-# of the operator's declared scope.
+# permission to test. The list MUST be non-empty. Be specific.
+#
+# These are ENFORCED per tool call: the terminal, web, and browser tools
+# each consult this list and refuse any dispatch that would touch a host
+# not listed below. Matching rules:
+#   - Hostnames are exact and case-insensitive: "acme.com" matches
+#     "https://acme.com/foo" and "acme.com:443"; it does NOT match
+#     "evil-acme.com" or "api.acme.com" (no substring, no wildcard).
+#     List subdomains explicitly.
+#   - IPs use exact match or CIDR (e.g. "10.10.10.0/24" matches
+#     10.10.10.1 through 10.10.10.254, including http://10.10.10.42:80/).
+#   - Port-agnostic at the host level: "acme.com:443" in scope matches
+#     "acme.com:80" too. Port-level restriction is a planned follow-up.
+#   - CIDR rules match only IP literals, not hostnames (no DNS at this
+#     layer — list the resolved IPs/CIDR you authorize).
 targets:
   - "acme-webapp.example.com"
   - "api.acme-webapp.example.com"

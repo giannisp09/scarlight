@@ -18,7 +18,12 @@ from scarlight_cli import engagement_scope
 from scarlight_cli.engagement_scope import (
     EngagementScope,
     EngagementScopeError,
+    _extract_host,
+    _extract_network_targets_from_command,
     assert_active_scope,
+    check_command_authorized,
+    check_url_authorized,
+    get_active_scope,
     load_active_scope,
 )
 
@@ -49,14 +54,16 @@ def _clear_bypass(monkeypatch):
     """Tests in this module exercise the guard directly. The session-level
     autouse fixture in tests/conftest.py sets SCARLIGHT_NO_ENGAGEMENT=1 so
     AIAgent.run_conversation tests don't all break; here we clear it so we
-    can test the actual guard behavior. Also resets the warn-once flags
-    and clears TERMINAL_ENV so the sandbox-default helper sees a clean
-    slate."""
+    can test the actual guard behavior. Also resets the warn-once flags,
+    clears TERMINAL_ENV so the sandbox-default helper sees a clean slate,
+    and resets the active-scope cache so get_active_scope() doesn't
+    leak between tests."""
     monkeypatch.delenv("SCARLIGHT_NO_ENGAGEMENT", raising=False)
     monkeypatch.delenv("SCARLIGHT_ENGAGEMENT", raising=False)
     monkeypatch.delenv("TERMINAL_ENV", raising=False)
     monkeypatch.setattr(engagement_scope, "_bypass_warned", False)
     monkeypatch.setattr(engagement_scope, "_sandbox_default_logged", False)
+    monkeypatch.setattr(engagement_scope, "_active_scope", None)
 
 
 @pytest.fixture
@@ -416,6 +423,328 @@ class TestSandboxedTerminalDefault:
             if "defaulting TERMINAL_ENV=docker" in r.getMessage()
         ]
         assert len(sandbox_warnings) == 1
+
+
+# ── Active-scope cache (get_active_scope) ──────────────────────────────────
+
+
+class TestActiveScopeCache:
+    """get_active_scope() returns whatever the last assert_active_scope()
+    call populated, so tools can fetch the scope cheaply on every dispatch."""
+
+    def test_returns_none_before_any_assert(self, in_isolated_cwd):
+        assert get_active_scope() is None
+
+    def test_populated_after_assert_with_real_scope(self, in_isolated_cwd):
+        _write(in_isolated_cwd / "engagement.yaml", _valid_scope_dict())
+        scope = assert_active_scope()
+        assert get_active_scope() is scope
+
+    def test_populated_after_assert_with_bypass(self, in_isolated_cwd, monkeypatch):
+        monkeypatch.setenv("SCARLIGHT_NO_ENGAGEMENT", "1")
+        scope = assert_active_scope()
+        cached = get_active_scope()
+        assert cached is scope
+        assert cached.bypassed is True
+
+
+# ── Host extraction (_extract_host) ────────────────────────────────────────
+
+
+class TestExtractHost:
+    """Pluck canonical host from URL / host:port / bare host. Lowercases."""
+
+    @pytest.mark.parametrize("value,expected", [
+        ("acme.com", "acme.com"),
+        ("Acme.Com", "acme.com"),
+        ("https://acme.com/foo", "acme.com"),
+        ("http://acme.com:8080/foo?q=1", "acme.com"),
+        ("acme.com:443", "acme.com"),
+        ("10.0.0.1", "10.0.0.1"),
+        ("10.0.0.1:80", "10.0.0.1"),
+        ("[::1]:8080", "::1"),
+        ("::1", "::1"),
+        ("2001:db8::1", "2001:db8::1"),
+        ("", ""),
+        ("   ", ""),
+    ])
+    def test_extract_host_no_cidr(self, value, expected):
+        assert _extract_host(value, allow_cidr=False) == expected
+
+    def test_extract_host_with_cidr(self):
+        assert _extract_host("10.0.0.0/24", allow_cidr=True) == "10.0.0.0/24"
+        assert _extract_host("2001:db8::/32", allow_cidr=True) == "2001:db8::/32"
+
+    def test_cidr_not_extracted_when_disabled(self):
+        # With allow_cidr=False, a CIDR string isn't a valid host.
+        assert _extract_host("10.0.0.0/24", allow_cidr=False) == ""
+
+    def test_invalid_url_returns_empty(self):
+        assert _extract_host("://broken", allow_cidr=False) == ""
+
+    def test_non_string_returns_empty(self):
+        assert _extract_host(None, allow_cidr=False) == ""  # type: ignore[arg-type]
+        assert _extract_host(42, allow_cidr=False) == ""  # type: ignore[arg-type]
+
+
+# ── Command-target extraction (_extract_network_targets_from_command) ──────
+
+
+class TestExtractNetworkTargets:
+    """Pull URLs, FQDNs, and IPs out of a shell command string."""
+
+    def test_curl_url(self):
+        targets = _extract_network_targets_from_command(
+            "curl -si http://host.docker.internal:3000/robots.txt"
+        )
+        assert "http://host.docker.internal:3000/robots.txt" in targets
+        assert "host.docker.internal" in targets
+
+    def test_bare_hostname(self):
+        targets = _extract_network_targets_from_command("nmap -sV example.com -p 80")
+        assert "example.com" in targets
+
+    def test_bare_ipv4(self):
+        targets = _extract_network_targets_from_command("nc -v 10.0.0.5 8080")
+        assert "10.0.0.5" in targets
+
+    def test_bare_ipv6(self):
+        targets = _extract_network_targets_from_command("ping6 2001:db8::1")
+        assert "2001:db8::1" in targets
+
+    def test_mixed_command(self):
+        targets = _extract_network_targets_from_command(
+            "curl https://a.com && nmap 10.0.0.1 && ssh user@b.example.org"
+        )
+        assert "https://a.com" in targets
+        assert "a.com" in targets
+        assert "10.0.0.1" in targets
+        assert "b.example.org" in targets
+
+    def test_empty_command_returns_empty_list(self):
+        assert _extract_network_targets_from_command("") == []
+        assert _extract_network_targets_from_command(None) == []  # type: ignore[arg-type]
+
+    def test_command_with_no_network_targets(self):
+        targets = _extract_network_targets_from_command(
+            "apt-get update && apt-get install -y curl"
+        )
+        # 'apt-get' has no dots, no IP shape. 'curl' is a bare word.
+        # The FQDN regex needs a TLD-shaped suffix.
+        assert targets == []
+
+    def test_deduplication(self):
+        # Same hostname appearing multiple times should appear once.
+        targets = _extract_network_targets_from_command(
+            "curl example.com; curl example.com; curl example.com"
+        )
+        assert targets.count("example.com") == 1
+
+
+# ── is_target_authorized (the core enforcement check) ──────────────────────
+
+
+class TestIsTargetAuthorized:
+    """The operator's targets list now enforces per-tool-call."""
+
+    def _scope(self, *targets: str, bypassed: bool = False) -> EngagementScope:
+        return EngagementScope(
+            engagement_id="test",
+            authorization_reference="test",
+            operator="op",
+            acknowledged_at="2026-05-18",
+            targets=tuple(targets),
+            bypassed=bypassed,
+        )
+
+    def test_exact_hostname_match(self):
+        scope = self._scope("acme.com")
+        assert scope.is_target_authorized("acme.com")
+
+    def test_case_insensitive(self):
+        scope = self._scope("Acme.Com")
+        assert scope.is_target_authorized("acme.com")
+        assert scope.is_target_authorized("ACME.COM")
+
+    def test_url_matches_hostname_rule(self):
+        scope = self._scope("acme.com")
+        assert scope.is_target_authorized("https://acme.com/foo?q=1")
+        assert scope.is_target_authorized("http://acme.com:8080/")
+
+    def test_host_port_matches_hostname_rule(self):
+        # Port-agnostic at the host level.
+        scope = self._scope("acme.com")
+        assert scope.is_target_authorized("acme.com:443")
+
+    def test_substring_does_not_match(self):
+        # "evil-acme.com" must NOT match "acme.com" (no substring matching).
+        scope = self._scope("acme.com")
+        assert not scope.is_target_authorized("evil-acme.com")
+        assert not scope.is_target_authorized("acme.com.evil.net")
+
+    def test_subdomain_does_not_match(self):
+        # No implicit wildcards; subdomains need explicit listing.
+        scope = self._scope("acme.com")
+        assert not scope.is_target_authorized("api.acme.com")
+        assert not scope.is_target_authorized("sub.acme.com")
+
+    def test_subdomain_matches_when_explicitly_listed(self):
+        scope = self._scope("acme.com", "api.acme.com")
+        assert scope.is_target_authorized("api.acme.com")
+        assert scope.is_target_authorized("acme.com")
+        assert not scope.is_target_authorized("admin.acme.com")
+
+    def test_ipv4_exact_match(self):
+        scope = self._scope("10.0.0.5")
+        assert scope.is_target_authorized("10.0.0.5")
+        assert scope.is_target_authorized("http://10.0.0.5:8080/")
+        assert not scope.is_target_authorized("10.0.0.6")
+
+    def test_ipv4_cidr_match(self):
+        scope = self._scope("10.0.0.0/24")
+        assert scope.is_target_authorized("10.0.0.1")
+        assert scope.is_target_authorized("10.0.0.254")
+        assert scope.is_target_authorized("http://10.0.0.42:80/")
+        assert not scope.is_target_authorized("10.0.1.1")  # outside /24
+
+    def test_ipv4_cidr_does_not_match_hostnames(self):
+        # CIDR rules can't match a hostname (no DNS resolution at this layer).
+        scope = self._scope("10.0.0.0/24")
+        assert not scope.is_target_authorized("acme.com")
+
+    def test_ipv6_cidr_match(self):
+        scope = self._scope("2001:db8::/32")
+        assert scope.is_target_authorized("2001:db8::1")
+        assert scope.is_target_authorized("[2001:db8::cafe]:8080")
+        assert not scope.is_target_authorized("2001:db9::1")
+
+    def test_bypassed_scope_authorizes_everything(self):
+        # Internal harnesses / tests use bypass — they shouldn't see refusals.
+        scope = self._scope("acme.com", bypassed=True)
+        assert scope.is_target_authorized("anything.example.org")
+        assert scope.is_target_authorized("10.0.0.1")
+
+    def test_empty_input_refused(self):
+        scope = self._scope("acme.com")
+        assert not scope.is_target_authorized("")
+        assert not scope.is_target_authorized("   ")
+
+    def test_empty_targets_refuses_everything(self):
+        # Validation rejects empty targets at load time, but defensively
+        # test the method itself.
+        scope = self._scope()
+        assert not scope.is_target_authorized("acme.com")
+
+    def test_demo_scope_authorizes_lab_target(self):
+        # Mirrors demo/engagement.yaml's targets list.
+        scope = self._scope(
+            "host.docker.internal",
+            "host.docker.internal:3000",
+            "http://host.docker.internal:3000",
+            "127.0.0.1",
+            "localhost",
+        )
+        assert scope.is_target_authorized("http://host.docker.internal:3000/robots.txt")
+        assert scope.is_target_authorized("127.0.0.1")
+        assert scope.is_target_authorized("localhost")
+        assert not scope.is_target_authorized("example.org")
+
+
+# ── Public tool-side helpers: check_command_authorized / check_url_authorized ─
+
+
+class TestCheckCommandAuthorized:
+    """Verifies the helper terminal_tool calls before executing a command."""
+
+    def _activate(self, *targets: str) -> EngagementScope:
+        scope = EngagementScope(
+            engagement_id="test", authorization_reference="t",
+            operator="op", acknowledged_at="2026-05-18",
+            targets=tuple(targets),
+        )
+        engagement_scope._active_scope = scope
+        return scope
+
+    def test_returns_none_when_no_active_scope(self):
+        # No engagement loaded → no enforcement, no refusal.
+        engagement_scope._active_scope = None
+        assert check_command_authorized("curl http://evil.com/") is None
+
+    def test_returns_none_when_scope_bypassed(self):
+        engagement_scope._active_scope = EngagementScope(
+            engagement_id="x", authorization_reference="x", operator="x",
+            acknowledged_at="x", targets=(), bypassed=True,
+        )
+        assert check_command_authorized("curl http://evil.com/") is None
+
+    def test_returns_none_for_command_without_network_targets(self):
+        self._activate("acme.com")
+        assert check_command_authorized("apt-get install -y curl") is None
+        assert check_command_authorized("ls -la /tmp") is None
+
+    def test_returns_none_when_all_targets_authorized(self):
+        self._activate("acme.com", "10.0.0.0/24")
+        assert check_command_authorized("curl https://acme.com/foo") is None
+        assert check_command_authorized("nmap 10.0.0.5") is None
+        assert check_command_authorized(
+            "curl https://acme.com/ && nmap 10.0.0.99"
+        ) is None
+
+    def test_returns_refusal_for_unauthorized_target(self):
+        self._activate("acme.com")
+        msg = check_command_authorized("curl https://evil.com/")
+        assert msg is not None
+        assert "evil.com" in msg
+        assert "acme.com" in msg  # the authorized list is named in the msg
+        assert "Refused" in msg
+
+    def test_refusal_lists_only_the_unauthorized_targets(self):
+        self._activate("acme.com")
+        msg = check_command_authorized(
+            "curl https://acme.com/ && curl https://evil.com/"
+        )
+        assert msg is not None
+        assert "evil.com" in msg
+
+
+class TestCheckUrlAuthorized:
+    """Verifies the helper web/browser tools call on URL-typed args."""
+
+    def _activate(self, *targets: str) -> EngagementScope:
+        scope = EngagementScope(
+            engagement_id="test", authorization_reference="t",
+            operator="op", acknowledged_at="2026-05-18",
+            targets=tuple(targets),
+        )
+        engagement_scope._active_scope = scope
+        return scope
+
+    def test_authorized_url_returns_none(self):
+        self._activate("acme.com")
+        assert check_url_authorized("https://acme.com/foo") is None
+        assert check_url_authorized("acme.com") is None
+
+    def test_unauthorized_url_returns_refusal(self):
+        self._activate("acme.com")
+        msg = check_url_authorized("https://evil.com/")
+        assert msg is not None
+        assert "Refused" in msg
+
+    def test_no_active_scope_returns_none(self):
+        engagement_scope._active_scope = None
+        assert check_url_authorized("https://anywhere.example/") is None
+
+    def test_bypass_returns_none(self):
+        engagement_scope._active_scope = EngagementScope(
+            engagement_id="x", authorization_reference="x", operator="x",
+            acknowledged_at="x", targets=(), bypassed=True,
+        )
+        assert check_url_authorized("https://anywhere.example/") is None
+
+    def test_empty_input_returns_none(self):
+        self._activate("acme.com")
+        assert check_url_authorized("") is None
+        assert check_url_authorized(None) is None  # type: ignore[arg-type]
 
 
 # ── EngagementScope summary ────────────────────────────────────────────────

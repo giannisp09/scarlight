@@ -1685,6 +1685,24 @@ def terminal_tool(
                 "status": "error",
             }, ensure_ascii=False)
 
+        # Engagement-scope enforcement: refuse the command if it would
+        # reach an out-of-scope host. Returns None when there is no
+        # active scope (called outside an engagement) or the scope is
+        # bypassed (test harness / SCARLIGHT_NO_ENGAGEMENT=1) — see
+        # scarlight_cli/engagement_scope.py.
+        try:
+            from scarlight_cli.engagement_scope import check_command_authorized
+            refusal = check_command_authorized(command)
+        except Exception:  # noqa: BLE001 — never let scope-check failure hide the command
+            refusal = None
+        if refusal:
+            return json.dumps({
+                "output": "",
+                "exit_code": -1,
+                "error": refusal,
+                "status": "refused_scope",
+            }, ensure_ascii=False)
+
         # Get configuration
         config = _get_env_config()
         env_type = config["env_type"]

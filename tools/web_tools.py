@@ -871,6 +871,20 @@ async def web_extract_tool(
                          "Secrets must not be sent in URLs.",
             })
 
+    # Engagement-scope enforcement: each URL must fall inside the
+    # operator's authorized targets list. Returns None per URL when there
+    # is no active scope or the scope is bypassed. First out-of-scope URL
+    # short-circuits the call so the operator gets one clear refusal
+    # instead of N partial failures.
+    try:
+        from scarlight_cli.engagement_scope import check_url_authorized
+        for _url in urls:
+            refusal = check_url_authorized(_url)
+            if refusal:
+                return json.dumps({"success": False, "error": refusal})
+    except Exception:  # noqa: BLE001 — never let scope-check failure block legitimate calls
+        pass
+
     debug_call_data = {
         "parameters": {
             "urls": urls,

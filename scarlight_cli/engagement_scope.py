@@ -21,12 +21,15 @@ engagements. See ``CODE_OF_USE.md`` and ``engagement.yaml.example``.
 
 from __future__ import annotations
 
+import ipaddress
 import logging
 import os
+import re
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
+from urllib.parse import urlparse
 
 import yaml
 
@@ -51,9 +54,155 @@ _bypass_warned: bool = False
 # operators only need to see "I defaulted you to Docker" once.
 _sandbox_default_logged: bool = False
 
+# Per-process cache of the currently-active EngagementScope. Populated by
+# ``assert_active_scope()`` so tools (terminal, web, browser) can fetch the
+# scope via :func:`get_active_scope` without re-reading the YAML on every
+# call. Reset only by interpreter restart.
+_active_scope: Optional["EngagementScope"] = None
+
+# Network-target extraction patterns for parsing shell commands the
+# terminal tool is about to execute. The goal is conservative: catch the
+# obvious outbound targets (URLs, FQDN-shaped tokens, IPv4 and IPv6
+# addresses) so per-target enforcement can apply. False positives produce
+# extra refusal turns (the agent rephrases); false negatives let
+# out-of-scope traffic through, so prefer to over-catch.
+#
+# URLs and FQDNs / IPv4 use regex; IPv6 is split out from the regex path
+# and validated through ipaddress.ip_address per-token because IPv6 short
+# notation (``::``, ``::1``, ``2001:db8::cafe``) interacts badly with
+# regex word boundaries.
+_URL_RE = re.compile(
+    r"\bhttps?://[\w.\-]+(?::\d+)?(?:/[^\s'\"<>`]*)?",
+    re.IGNORECASE,
+)
+_FQDN_RE = re.compile(
+    r"\b(?:[a-z0-9](?:[a-z0-9\-]{0,61}[a-z0-9])?\.)+[a-z]{2,}\b",
+    re.IGNORECASE,
+)
+_IPV4_RE = re.compile(r"\b(?:\d{1,3}\.){3}\d{1,3}\b")
+
+# Token splitter for the IPv6 pass: shell punctuation + whitespace.
+_TOKEN_SPLIT_RE = re.compile(r"[\s;|&<>(){}\"'=,]+")
+
 
 class EngagementScopeError(RuntimeError):
     """Raised when an engagement starts without a valid authorization scope."""
+
+
+def _extract_host(value: str, allow_cidr: bool = False) -> str:
+    """Pluck the canonical host (or CIDR if ``allow_cidr=True``) from a URL,
+    ``host:port`` pair, bracketed IPv6, bare IPv6, or bare hostname.
+
+    Returned host is lowercased and stripped. Returns ``""`` on any parse
+    failure or empty input. This is intentionally permissive — the caller
+    treats an empty return as "no host to enforce against" and moves on.
+    """
+    if not value or not isinstance(value, str):
+        return ""
+    s = value.strip().lower()
+    if not s:
+        return ""
+
+    # URL form?
+    if "://" in s:
+        try:
+            return (urlparse(s).hostname or "").lower()
+        except Exception:
+            return ""
+
+    # CIDR like "10.0.0.0/24" or "2001:db8::/32" — only when the rule side
+    # is being extracted (scope target). Try the raw string first so IPv6
+    # CIDRs (which contain colons) parse cleanly; only if that fails do
+    # we attempt to strip a trailing :port from an IPv4 CIDR like
+    # "10.0.0.0/24:80" (an unusual scope notation but accept it).
+    if "/" in s:
+        if allow_cidr:
+            try:
+                ipaddress.ip_network(s, strict=False)
+                return s
+            except ValueError:
+                base, sep, port = s.rpartition(":")
+                if sep and port.isdigit():
+                    try:
+                        ipaddress.ip_network(base, strict=False)
+                        return base
+                    except ValueError:
+                        pass
+        # Path-without-scheme ("acme.com/foo") or CIDR-without-permission:
+        # not a legitimate host. Refuse rather than guess.
+        return ""
+
+    # Bracketed IPv6: "[::1]:8080" → "::1"
+    if s.startswith("[") and "]" in s:
+        return s.split("]", 1)[0][1:]
+
+    # Bare IPv6 (multiple colons, no slash, parses as an IP address)
+    if s.count(":") > 1 and "/" not in s:
+        try:
+            ipaddress.ip_address(s)
+            return s
+        except ValueError:
+            pass
+
+    # host:port → host
+    if ":" in s:
+        return s.rsplit(":", 1)[0]
+
+    return s
+
+
+def _extract_network_targets_from_command(command: str) -> List[str]:
+    """Find every plausible outbound network target in a shell command.
+
+    Returns a sorted, deduplicated list of URLs, FQDN-shaped hostnames,
+    IPv4 addresses, and IPv6 addresses. Used by the terminal-tool
+    integration to per-call-enforce the engagement scope. Empty/non-string
+    input returns ``[]``.
+
+    Conservative-but-loose: prefers false positives (extra refusal turns
+    the agent retries) over false negatives (out-of-scope traffic leaks).
+    Tokens like ``hello.world`` will match the FQDN pattern; that's
+    acceptable — the agent rephrases on the refusal.
+    """
+    if not command or not isinstance(command, str):
+        return []
+    found: set = set()
+
+    # URL / FQDN / IPv4 via regex.
+    for match in _URL_RE.findall(command):
+        found.add(match)
+    for match in _FQDN_RE.findall(command):
+        found.add(match)
+    for match in _IPV4_RE.findall(command):
+        found.add(match)
+
+    # IPv6 via tokenize + ipaddress validation. Regex on raw IPv6 with
+    # word-boundaries doesn't handle ``::`` short form cleanly, so we
+    # split the command on shell punctuation and ask the standard library
+    # whether each colon-bearing token is a valid IP. Catches bracketed
+    # forms like ``[::1]:8080`` by stripping brackets first.
+    for tok in _TOKEN_SPLIT_RE.split(command):
+        tok = tok.strip().rstrip(".,!?:")
+        if not tok or ":" not in tok:
+            continue
+        # Bracketed IPv6 with optional port.
+        if tok.startswith("[") and "]" in tok:
+            inner = tok.split("]", 1)[0][1:]
+            try:
+                ipaddress.ip_address(inner)
+                found.add(inner)
+                continue
+            except ValueError:
+                pass
+        # Bare IPv6 (multiple colons, parses as IP).
+        if tok.count(":") >= 2:
+            try:
+                ipaddress.ip_address(tok)
+                found.add(tok)
+            except ValueError:
+                pass
+
+    return sorted(found)
 
 
 @dataclass(frozen=True)
@@ -61,9 +210,8 @@ class EngagementScope:
     """A loaded, validated authorization scope for a Scarlight engagement.
 
     Treat this as an immutable record of the operator's declared authority
-    to test a set of targets. Future tooling may use ``.targets`` and
-    ``.is_target_authorized()`` to gate per-tool actions; v1 only uses
-    its presence as a pre-flight check.
+    to test a set of targets. :meth:`is_target_authorized` is consulted by
+    the terminal, web, and browser tools to refuse out-of-scope dispatch.
     """
 
     engagement_id: str
@@ -89,6 +237,54 @@ class EngagementScope:
             f"engagement: {self.engagement_id} "
             f"({target_count} {target_word}; auth: {self.authorization_reference})"
         )
+
+    def is_target_authorized(self, url_or_host: str) -> bool:
+        """Test whether a given URL, ``host:port``, or bare host falls inside
+        the operator's declared scope.
+
+        Matching rules (any one matching scope target returns True):
+
+        - **Exact host** match, case-insensitive. ``acme.com`` in scope matches
+          ``acme.com`` and ``https://acme.com/anything``; it does NOT match
+          ``evil-acme.com`` (no substring) or ``sub.acme.com`` (no wildcard
+          implied — list the subdomain explicitly).
+        - **CIDR** match for IP candidates. ``10.0.0.0/24`` matches every
+          host in that block, including ``http://10.0.0.5:8080/foo``. CIDR
+          rules do NOT match hostnames — only IP literals (no DNS).
+        - **Port-agnostic.** Scope ``acme.com:443`` and ``acme.com:80`` both
+          collapse to ``acme.com`` for the purpose of host matching. If
+          port-level restriction matters for your engagement, that
+          enforcement lives elsewhere (a planned future hook).
+
+        Bypassed scopes (``SCARLIGHT_NO_ENGAGEMENT=1``) always return True —
+        internal harnesses and tests shouldn't have their tool calls
+        refused. Empty input returns False (nothing to authorize).
+        """
+        if self.bypassed:
+            return True
+        candidate = _extract_host(url_or_host, allow_cidr=False)
+        if not candidate:
+            return False
+        try:
+            candidate_ip = ipaddress.ip_address(candidate)
+        except ValueError:
+            candidate_ip = None
+        for target in self.targets:
+            rule = _extract_host(target, allow_cidr=True)
+            if not rule:
+                continue
+            if "/" in rule:
+                if candidate_ip is None:
+                    continue
+                try:
+                    if candidate_ip in ipaddress.ip_network(rule, strict=False):
+                        return True
+                except ValueError:
+                    continue
+            else:
+                if rule == candidate:
+                    return True
+        return False
 
 
 def _is_truthy(value: str) -> bool:
@@ -422,6 +618,100 @@ def _enforce_sandboxed_terminal_default(scope: EngagementScope) -> None:
     )
 
 
+def _format_refusal_for_unauthorized(
+    unauthorized: List[str], scope: "EngagementScope"
+) -> str:
+    """Build the operator-facing refusal message for an out-of-scope hit.
+
+    Lists the offending target(s) first (truncated past 5), then the
+    authorized scope (also truncated past 5), then the fix. Goes through
+    a single helper so terminal, web, and browser refusals read the same.
+    """
+    def _trunc(items: List[str], cap: int = 5) -> str:
+        shown = ", ".join(items[:cap])
+        if len(items) > cap:
+            shown += f" (and {len(items) - cap} more)"
+        return shown
+
+    return (
+        "Refused: target(s) not in engagement scope. "
+        f"Unauthorized: {_trunc(unauthorized)}. "
+        f"Authorized per engagement.yaml: {_trunc(list(scope.targets))}. "
+        "Edit the engagement's `targets:` list to allow, or hit only the "
+        "currently-listed targets."
+    )
+
+
+def check_command_authorized(command: str) -> Optional[str]:
+    """Check whether a shell command's network targets are all in scope.
+
+    Used by ``tools/terminal_tool.py`` before executing any command — the
+    Step 7 scope guard cleared the *turn*; this gate clears the *tool
+    call*. The targets in the command (URLs, FQDN-looking tokens, IPv4,
+    IPv6) are extracted by :func:`_extract_network_targets_from_command`
+    and matched against the active scope.
+
+    Returns ``None`` when:
+      - there is no active scope (called outside an engagement),
+      - the active scope is bypassed (``SCARLIGHT_NO_ENGAGEMENT=1``),
+      - the command has no detectable network targets,
+      - every detected target falls inside the scope.
+
+    Returns the refusal-message string otherwise; callers shape that into
+    whatever error envelope they emit. Logs at WARNING level on refusal.
+    """
+    scope = get_active_scope()
+    if scope is None or scope.bypassed:
+        return None
+    targets = _extract_network_targets_from_command(command)
+    if not targets:
+        return None
+    unauthorized = [t for t in targets if not scope.is_target_authorized(t)]
+    if not unauthorized:
+        return None
+    msg = _format_refusal_for_unauthorized(unauthorized, scope)
+    logging.warning("Engagement scope: refusing terminal command — %s", msg)
+    return msg
+
+
+def check_url_authorized(url_or_host: str) -> Optional[str]:
+    """Check whether a single URL / host / host:port falls inside the active
+    engagement scope.
+
+    Used by URL-typed tool dispatch (``tools/web_tools.py``,
+    ``tools/browser_tool.py``). Same return contract as
+    :func:`check_command_authorized` — ``None`` for "allowed", else the
+    refusal message. ``None`` is also returned when the input is empty
+    or non-string (the caller's own validation will handle that).
+    """
+    if not url_or_host or not isinstance(url_or_host, str):
+        return None
+    scope = get_active_scope()
+    if scope is None or scope.bypassed:
+        return None
+    if scope.is_target_authorized(url_or_host):
+        return None
+    msg = _format_refusal_for_unauthorized([url_or_host], scope)
+    logging.warning("Engagement scope: refusing URL dispatch — %s", msg)
+    return msg
+
+
+def get_active_scope() -> Optional[EngagementScope]:
+    """Return the EngagementScope active for the current process, or None.
+
+    Populated by :func:`assert_active_scope` on each turn. Tools (terminal,
+    web, browser) use this to gate dispatch against the operator's
+    declared scope without re-reading the YAML file every call.
+
+    Returns ``None`` when called outside an engagement (no turn has run
+    through :func:`assert_active_scope` yet). Callers should treat that
+    as "no enforcement to apply" rather than as a refusal — the
+    pre-flight check in ``AIAgent.run_conversation()`` already prevents
+    a real engagement from starting without a scope.
+    """
+    return _active_scope
+
+
 def assert_active_scope() -> EngagementScope:
     """Load + validate the active scope, or refuse the engagement.
 
@@ -432,13 +722,22 @@ def assert_active_scope() -> EngagementScope:
     On success with a real scope, defaults the terminal backend to Docker
     (Kali) if the operator hasn't pinned one — see
     :func:`_enforce_sandboxed_terminal_default`.
+
+    Side effect: stores the returned scope into the module-level
+    :data:`_active_scope` so :func:`get_active_scope` (used by tool
+    enforcement) can find it without re-reading the YAML.
     """
+    global _active_scope
+
     if _bypass_active():
         _warn_bypass_once()
-        return _bypass_scope()
+        scope = _bypass_scope()
+        _active_scope = scope
+        return scope
 
     scope = load_active_scope()
     if scope is None:
         raise EngagementScopeError(_refusal_message())
     _enforce_sandboxed_terminal_default(scope)
+    _active_scope = scope
     return scope
