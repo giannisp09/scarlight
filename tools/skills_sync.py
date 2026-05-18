@@ -16,7 +16,11 @@ Update logic:
         update from bundled if bundled changed. New origin hash recorded.
       * If user copy differs from origin hash: user customized it → SKIP.
   - DELETED by user (in manifest, absent from user dir): respected, not re-added.
-  - REMOVED from bundled (in manifest, gone from repo): cleaned from manifest.
+  - REMOVED from bundled (in manifest, gone from repo): manifest entry is
+    cleaned AND the on-disk skill directory is removed too — *if and only if*
+    the user hasn't modified the on-disk copy (its hash still matches the
+    recorded origin_hash). User-modified or hash-unknown copies are
+    preserved on disk so we never silently delete user work.
 
 The manifest lives at ~/.scarlight/skills/.bundled_manifest.
 """
@@ -27,7 +31,7 @@ import os
 import shutil
 from pathlib import Path
 from scarlight_constants import get_scarlight_home
-from typing import Dict, List, Tuple
+from typing import Dict, List, Optional, Tuple
 from utils import atomic_replace
 
 logger = logging.getLogger(__name__)
@@ -174,6 +178,31 @@ def _dir_hash(directory: Path) -> str:
     return hasher.hexdigest()
 
 
+def _find_user_skill_dir_by_name(skill_name: str) -> Optional[Path]:
+    """Locate the on-disk directory of a previously-bundled skill by name.
+
+    Used when reconciling orphans — skills the manifest tracked but that
+    were removed from the bundled set (e.g. Scarlight's Step-4 archive of
+    hermes-agent's general-purpose seeds). We can't reconstruct the dest
+    path from a vanished bundled source, so we scan ``SKILLS_DIR`` for a
+    ``SKILL.md`` whose YAML frontmatter ``name:`` matches.
+
+    Hub-installed skills under ``.hub/`` are deliberately skipped — they
+    have their own lifecycle (``scarlight skills uninstall``) and must
+    never be deleted by bundled-skill reconciliation.
+    """
+    if not SKILLS_DIR.exists():
+        return None
+    for skill_md in SKILLS_DIR.rglob("SKILL.md"):
+        path_str = str(skill_md)
+        if "/.hub/" in path_str or "/.git/" in path_str:
+            continue
+        dir_path = skill_md.parent
+        if _read_skill_name(skill_md, dir_path.name) == skill_name:
+            return dir_path
+    return None
+
+
 def sync_skills(quiet: bool = False) -> dict:
     """
     Sync bundled skills into ~/.scarlight/skills/ using the manifest.
@@ -290,9 +319,42 @@ def sync_skills(quiet: bool = False) -> dict:
             # ── In manifest but not on disk — user deleted it ──
             skipped += 1
 
-    # Clean stale manifest entries (skills removed from bundled dir)
+    # Clean stale manifest entries (skills removed from bundled dir).
+    # When a bundled skill disappears AND the user hasn't modified their
+    # on-disk copy, also remove the orphan directory — otherwise users who
+    # upgraded from hermes-agent see hundreds of stale general-purpose
+    # SKILL.md files in ~/.scarlight/skills/ that no longer correspond to
+    # anything in the bundled set (Step 4 fork artifact). User-modified
+    # copies are always preserved on disk so we never delete user work
+    # silently. The manifest entry itself is always cleaned.
     cleaned = sorted(set(manifest.keys()) - bundled_names)
+    cleaned_dirs_removed: List[str] = []
+    cleaned_dirs_preserved: List[str] = []
     for name in cleaned:
+        origin_hash = manifest.get(name, "")
+        user_dir = _find_user_skill_dir_by_name(name)
+        if user_dir is not None and user_dir.exists():
+            user_hash = _dir_hash(user_dir)
+            if origin_hash and user_hash == origin_hash:
+                # Unmodified — safe to remove.
+                try:
+                    shutil.rmtree(user_dir)
+                    cleaned_dirs_removed.append(name)
+                    if not quiet:
+                        print(f"  - {name} (removed; bundled gone, user copy unmodified)")
+                except (OSError, IOError) as e:
+                    if not quiet:
+                        print(f"  ! Failed to remove orphan {name} at {user_dir}: {e}")
+                    cleaned_dirs_preserved.append(name)
+            else:
+                # User-modified, or v1-migration entry without a baseline
+                # hash — preserve the on-disk copy. The operator can delete
+                # it manually with `scarlight skills uninstall` or `rm -rf`
+                # if they want it gone.
+                cleaned_dirs_preserved.append(name)
+                if not quiet:
+                    reason = "user-modified" if origin_hash else "no origin hash recorded"
+                    print(f"  ~ {name} (bundled gone, on-disk preserved — {reason})")
         del manifest[name]
 
     # Also copy DESCRIPTION.md files for categories (if not already present)
@@ -314,6 +376,8 @@ def sync_skills(quiet: bool = False) -> dict:
         "skipped": skipped,
         "user_modified": user_modified,
         "cleaned": cleaned,
+        "cleaned_dirs_removed": cleaned_dirs_removed,
+        "cleaned_dirs_preserved": cleaned_dirs_preserved,
         "total_bundled": len(bundled_skills),
     }
 
@@ -428,4 +492,8 @@ if __name__ == "__main__":
         parts.append(f"{len(result['user_modified'])} user-modified (kept)")
     if result["cleaned"]:
         parts.append(f"{len(result['cleaned'])} cleaned from manifest")
+    if result.get("cleaned_dirs_removed"):
+        parts.append(f"{len(result['cleaned_dirs_removed'])} orphan dirs removed")
+    if result.get("cleaned_dirs_preserved"):
+        parts.append(f"{len(result['cleaned_dirs_preserved'])} orphan dirs preserved (user-modified)")
     print(f"\nDone: {', '.join(parts)}. {result['total_bundled']} total bundled.")

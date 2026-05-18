@@ -387,6 +387,157 @@ class TestSyncSkills:
             manifest = _read_manifest()
         assert "removed-skill" not in manifest
 
+    # ── Orphan-dir cleanup (Step 4 fork artifact, Step 9 fix) ──────────────
+    #
+    # When a skill disappears from the bundled set (e.g. hermes-agent's
+    # general-purpose seeds archived in Step 4), the manifest entry is
+    # removed AND the on-disk directory is reaped — but only if the user
+    # hasn't modified it. User-modified copies, hub-installed skills, and
+    # v1-migration entries without a baseline hash are preserved.
+
+    def test_orphan_dir_removed_when_user_unmodified(self, tmp_path):
+        """Bundled skill removed + user copy unmodified → dir gone, manifest cleaned."""
+        bundled = self._setup_bundled(tmp_path)
+        skills_dir = tmp_path / "user_skills"
+        manifest_file = skills_dir / ".bundled_manifest"
+
+        # Plant an orphan: in manifest + on disk + NOT in bundled.
+        orphan_dir = skills_dir / "general-purpose" / "removed-skill"
+        orphan_dir.mkdir(parents=True)
+        (orphan_dir / "SKILL.md").write_text(
+            "---\nname: removed-skill\n---\n# Removed\n"
+        )
+        orphan_hash = _dir_hash(orphan_dir)
+
+        # Append the orphan's true (unmodified) hash to the manifest.
+        new_hash = _dir_hash(bundled / "category" / "new-skill")
+        old_hash = _dir_hash(bundled / "old-skill")
+        manifest_file.write_text(
+            f"new-skill:{new_hash}\nold-skill:{old_hash}\nremoved-skill:{orphan_hash}\n"
+        )
+
+        with self._patches(bundled, skills_dir, manifest_file):
+            result = sync_skills(quiet=True)
+
+        assert "removed-skill" in result["cleaned"]
+        assert "removed-skill" in result["cleaned_dirs_removed"]
+        assert "removed-skill" not in result["cleaned_dirs_preserved"]
+        assert not orphan_dir.exists()
+
+    def test_orphan_dir_preserved_when_user_modified(self, tmp_path):
+        """Bundled skill removed + user modified the copy → dir kept, manifest cleaned."""
+        bundled = self._setup_bundled(tmp_path)
+        skills_dir = tmp_path / "user_skills"
+        manifest_file = skills_dir / ".bundled_manifest"
+
+        orphan_dir = skills_dir / "general-purpose" / "removed-skill"
+        orphan_dir.mkdir(parents=True)
+        (orphan_dir / "SKILL.md").write_text(
+            "---\nname: removed-skill\n---\n# Original\n"
+        )
+        original_hash = _dir_hash(orphan_dir)
+
+        # User then edited the file — current hash now differs from original.
+        (orphan_dir / "SKILL.md").write_text(
+            "---\nname: removed-skill\n---\n# User customised\n"
+        )
+
+        manifest_file.write_text(f"removed-skill:{original_hash}\n")
+
+        with self._patches(bundled, skills_dir, manifest_file):
+            result = sync_skills(quiet=True)
+
+        assert "removed-skill" in result["cleaned"]
+        assert "removed-skill" not in result["cleaned_dirs_removed"]
+        assert "removed-skill" in result["cleaned_dirs_preserved"]
+        assert orphan_dir.exists()
+        assert (orphan_dir / "SKILL.md").read_text().endswith("User customised\n")
+
+    def test_orphan_dir_preserved_when_origin_hash_empty(self, tmp_path):
+        """v1-migration orphan (empty hash) → preserved; can't tell if modified."""
+        bundled = self._setup_bundled(tmp_path)
+        skills_dir = tmp_path / "user_skills"
+        manifest_file = skills_dir / ".bundled_manifest"
+
+        orphan_dir = skills_dir / "v1-migration-skill"
+        orphan_dir.mkdir(parents=True)
+        (orphan_dir / "SKILL.md").write_text(
+            "---\nname: v1-migration-skill\n---\n# v1 era\n"
+        )
+
+        # Empty hash = v1 manifest format that never recorded a baseline.
+        manifest_file.write_text("v1-migration-skill:\n")
+
+        with self._patches(bundled, skills_dir, manifest_file):
+            result = sync_skills(quiet=True)
+
+        assert "v1-migration-skill" in result["cleaned"]
+        assert "v1-migration-skill" not in result["cleaned_dirs_removed"]
+        assert "v1-migration-skill" in result["cleaned_dirs_preserved"]
+        assert orphan_dir.exists()
+
+    def test_orphan_already_deleted_handled_gracefully(self, tmp_path):
+        """Orphan listed in manifest but already gone from disk: no error."""
+        bundled = self._setup_bundled(tmp_path)
+        skills_dir = tmp_path / "user_skills"
+        manifest_file = skills_dir / ".bundled_manifest"
+        skills_dir.mkdir(parents=True)
+        manifest_file.write_text("ghost-skill:somehash\n")
+
+        with self._patches(bundled, skills_dir, manifest_file):
+            result = sync_skills(quiet=True)
+
+        assert "ghost-skill" in result["cleaned"]
+        assert "ghost-skill" not in result["cleaned_dirs_removed"]
+        assert "ghost-skill" not in result["cleaned_dirs_preserved"]
+
+    def test_orphan_found_by_frontmatter_name_not_dir_name(self, tmp_path):
+        """Orphan's dir name differs from skill name in frontmatter: still found."""
+        bundled = self._setup_bundled(tmp_path)
+        skills_dir = tmp_path / "user_skills"
+        manifest_file = skills_dir / ".bundled_manifest"
+
+        # Directory is "wrong-dir-name", but SKILL.md frontmatter says
+        # name: removed-skill. The manifest tracks by frontmatter name, so
+        # the reaper must match through frontmatter not dir basename.
+        orphan_dir = skills_dir / "wrong-dir-name"
+        orphan_dir.mkdir(parents=True)
+        (orphan_dir / "SKILL.md").write_text(
+            "---\nname: removed-skill\n---\n# Orphan\n"
+        )
+        orphan_hash = _dir_hash(orphan_dir)
+        manifest_file.write_text(f"removed-skill:{orphan_hash}\n")
+
+        with self._patches(bundled, skills_dir, manifest_file):
+            result = sync_skills(quiet=True)
+
+        assert "removed-skill" in result["cleaned_dirs_removed"]
+        assert not orphan_dir.exists()
+
+    def test_hub_installed_skills_never_touched_by_orphan_reaper(self, tmp_path):
+        """Hub-installed skills under .hub/ have their own lifecycle. Don't touch."""
+        bundled = self._setup_bundled(tmp_path)
+        skills_dir = tmp_path / "user_skills"
+        manifest_file = skills_dir / ".bundled_manifest"
+
+        # A hub-installed skill that happens to share a name with an
+        # orphan in the manifest. The reaper must not find it.
+        hub_skill_dir = skills_dir / ".hub" / "removed-skill"
+        hub_skill_dir.mkdir(parents=True)
+        (hub_skill_dir / "SKILL.md").write_text(
+            "---\nname: removed-skill\n---\n# Hub-installed\n"
+        )
+        hub_hash = _dir_hash(hub_skill_dir)
+        manifest_file.write_text(f"removed-skill:{hub_hash}\n")
+
+        with self._patches(bundled, skills_dir, manifest_file):
+            result = sync_skills(quiet=True)
+
+        # Manifest entry cleared, but the hub copy is untouched.
+        assert "removed-skill" in result["cleaned"]
+        assert "removed-skill" not in result["cleaned_dirs_removed"]
+        assert hub_skill_dir.exists()
+
     def test_does_not_overwrite_existing_unmanifested_skill(self, tmp_path):
         """New skill whose name collides with user-created skill = skipped."""
         bundled = self._setup_bundled(tmp_path)
