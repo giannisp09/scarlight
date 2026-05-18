@@ -188,6 +188,12 @@ _SCARLIGHT_BEHAVIORAL_VARS = frozenset({
     "SCARLIGHT_BACKGROUND_NOTIFICATIONS",
     "SCARLIGHT_EXEC_ASK",
     "SCARLIGHT_HOME_MODE",
+    # Engagement-scope guard (Step 7). Both are SCARLIGHT_* env vars that
+    # change the offensive-engagement authorization behavior. _hermetic_environment
+    # explicitly re-sets SCARLIGHT_NO_ENGAGEMENT=1 below so tests bypass the guard;
+    # we clear here first so a developer shell can't override that intent.
+    "SCARLIGHT_NO_ENGAGEMENT",
+    "SCARLIGHT_ENGAGEMENT",
     # Kanban path/board pins must never leak from a developer shell or
     # dispatched worker into tests; otherwise tests can write fake tasks to
     # the real ~/.scarlight/kanban.db instead of the per-test SCARLIGHT_HOME.
@@ -340,6 +346,14 @@ def _hermetic_environment(tmp_path, monkeypatch):
     monkeypatch.setenv("AWS_EC2_METADATA_DISABLED", "true")
     monkeypatch.setenv("AWS_METADATA_SERVICE_TIMEOUT", "1")
     monkeypatch.setenv("AWS_METADATA_SERVICE_NUM_ATTEMPTS", "1")
+
+    # 4c. Bypass the offensive-engagement authorization guard for the
+    #     test suite. AIAgent.run_conversation() refuses to start without
+    #     a valid engagement.yaml; tests run unattended and don't connect
+    #     to real targets, so they set the documented internal-use
+    #     bypass. Production engagements MUST NOT set this — see
+    #     scarlight_cli/engagement_scope.py and CODE_OF_USE.md.
+    monkeypatch.setenv("SCARLIGHT_NO_ENGAGEMENT", "1")
 
     # 5. Reset plugin singleton so tests don't leak plugins from
     #    ~/.scarlight/plugins/ (which, per step 3, is now empty — but the

@@ -11820,6 +11820,13 @@ class AIAgent:
         # Installed once, transparent when streams are healthy, prevents crash on write.
         _install_safe_stdio()
 
+        # Pre-flight: refuse to start a turn without a valid engagement scope.
+        # Scarlight is an offensive-security tool — see CODE_OF_USE.md. The
+        # check honors SCARLIGHT_NO_ENGAGEMENT=1 for internal harnesses and
+        # the test suite. fork-runbook.md Step 7.
+        from scarlight_cli.engagement_scope import assert_active_scope
+        self._engagement_scope = assert_active_scope()
+
         self._ensure_db_session()
 
         # Tell auxiliary_client what the live main provider/model are for
