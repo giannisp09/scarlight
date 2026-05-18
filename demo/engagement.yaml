@@ -1,0 +1,45 @@
+# Scarlight demo — authorization scope for the OWASP Juice Shop lab.
+#
+# The Step 7 guard requires every engagement to have a valid scope file
+# declaring authorized targets, an authorization reference, and operator
+# acknowledgment of CODE_OF_USE.md. This file is the demo's scope.
+#
+# Target: OWASP Juice Shop (bkimminich/juice-shop), an OWASP-maintained
+# deliberately-vulnerable training application. Started locally in Docker
+# by `demo/start-lab.sh`, bound to 127.0.0.1:3000 — no third party is
+# touched. Reachable from inside the Kali sandbox at host.docker.internal.
+#
+# Replace operator info for your own recording. Keep the targets list as
+# given unless you change start-lab.sh.
+
+engagement_id: "scarlight-demo-juice-shop"
+
+authorization_reference: >
+  Scarlight v1 demo. Target is OWASP Juice Shop (bkimminich/juice-shop),
+  an OWASP-maintained deliberately-vulnerable training application
+  (MIT-licensed). Run locally in Docker on the operator's machine,
+  bound to host loopback only.
+
+operator_acknowledgment:
+  acknowledged: true
+  operator: "Demo Operator <operator@example.com>"
+  date: "2026-05-18"
+  code_of_use_version: "1"
+
+targets:
+  - "host.docker.internal"
+  - "host.docker.internal:3000"
+  - "http://host.docker.internal:3000"
+  - "http://host.docker.internal:3000/"
+  - "127.0.0.1"
+  - "127.0.0.1:3000"
+  - "localhost"
+  - "localhost:3000"
+
+window:
+  start: "2026-05-18T00:00:00Z"
+  end:   "2027-05-18T23:59:59Z"
+
+notes: |
+  Lab container: scarlight-demo-target (image bkimminich/juice-shop:latest).
+  Brought up by demo/start-lab.sh, torn down by demo/stop-lab.sh.

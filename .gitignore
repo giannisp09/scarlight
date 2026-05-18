@@ -7,8 +7,10 @@ __pycache__/
 .vscode/
 .claude/
 # Operator-local engagement scope files + lab scratch space — never committed.
+# Sanitized demo scopes under demo/ are committed (see !demo/engagement.yaml).
 lab/
 engagement.yaml
+!demo/engagement.yaml
 .env
 .env.local
 .env.development.local
