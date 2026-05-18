@@ -35,6 +35,8 @@ from scarlight_constants import get_scarlight_home
 
 _BYPASS_ENV_VAR = "SCARLIGHT_NO_ENGAGEMENT"
 _OVERRIDE_ENV_VAR = "SCARLIGHT_ENGAGEMENT"
+_TERMINAL_ENV_VAR = "TERMINAL_ENV"
+_TERMINAL_DEFAULT_FOR_ENGAGEMENT = "docker"
 _CWD_FILENAME = "engagement.yaml"
 _HOME_FILENAME = "engagement.yaml"
 _EXAMPLE_PATH_HINT = "engagement.yaml.example"
@@ -44,6 +46,10 @@ _TRUTHY = frozenset({"1", "true", "yes", "on"})
 # Set true once we've logged the bypass-active warning so we don't spam
 # the logs every turn. Reset only by interpreter restart.
 _bypass_warned: bool = False
+
+# Set true once we've logged the sandbox-default warning per process —
+# operators only need to see "I defaulted you to Docker" once.
+_sandbox_default_logged: bool = False
 
 
 class EngagementScopeError(RuntimeError):
@@ -314,12 +320,118 @@ def _refusal_message() -> str:
     )
 
 
+def _operator_has_chosen_terminal_backend() -> bool:
+    """Return True iff the operator has explicitly pinned a terminal
+    backend. The schema default ``local`` being bridged into
+    ``TERMINAL_ENV`` by ``cli.load_cli_config()`` at import time does NOT
+    count as an operator choice — it's just the upstream default leaking
+    through, and Scarlight's offensive-engagement default is Docker.
+
+    Three ways the operator can pin:
+
+    1. ``TERMINAL_ENV`` already set to anything other than ``local`` —
+       impossible for ``cli.load_cli_config()`` to have produced from
+       schema defaults, so it must have come from the shell, the dotenv
+       loader, or another deliberate setter.
+    2. ``TERMINAL_ENV`` line present in ``~/.scarlight/.env`` — written by
+       ``scarlight config set terminal.backend`` or ``scarlight setup``.
+    3. ``terminal.backend`` key present in the user's ``~/.scarlight/
+       config.yaml`` — the documented config-file knob.
+
+    Edge case: an operator who launches ``TERMINAL_ENV=local scarlight``
+    from a shell without persisting that choice in ``.env`` or
+    ``config.yaml`` will get overridden to Docker. That trade is
+    deliberate — for Scarlight, sandbox-by-default beats preserving a
+    bare-shell choice that visually matches the schema default.
+    """
+    current = os.environ.get(_TERMINAL_ENV_VAR, "").strip()
+    if current and current != "local":
+        return True
+
+    from scarlight_constants import get_scarlight_home
+
+    home = get_scarlight_home()
+    env_file = home / ".env"
+    if env_file.is_file():
+        try:
+            for line in env_file.read_text(encoding="utf-8").splitlines():
+                stripped = line.strip()
+                if stripped.startswith("TERMINAL_ENV="):
+                    return True
+        except OSError:
+            pass
+
+    cfg_file = home / "config.yaml"
+    if cfg_file.is_file():
+        try:
+            with open(cfg_file, encoding="utf-8") as f:
+                cfg_raw = yaml.safe_load(f) or {}
+        except (OSError, yaml.YAMLError):
+            cfg_raw = {}
+        terminal_cfg = cfg_raw.get("terminal") if isinstance(cfg_raw, dict) else None
+        if isinstance(terminal_cfg, dict) and "backend" in terminal_cfg:
+            return True
+
+    return False
+
+
+def _enforce_sandboxed_terminal_default(scope: EngagementScope) -> None:
+    """Default the terminal tool to the Docker (Kali) sandbox when a real
+    engagement is active and the operator hasn't already chosen a backend.
+
+    Step 5 sets the Kali image as ``DEFAULT_TERMINAL_IMAGE`` but leaves the
+    default ``TERMINAL_ENV`` at ``local`` (hermes-agent's general-purpose
+    default). For an offensive-security engagement that pairing is wrong:
+    the scope guard (Step 7) clears the turn, but commands then run on the
+    operator's host instead of inside the sandbox Step 5 declared as the
+    execution substrate. This helper closes that gap.
+
+    The tricky bit: by the time ``run_conversation`` calls us, ``cli.py``'s
+    module-level ``load_cli_config()`` has already bridged the schema
+    default ``terminal.backend: local`` into ``TERMINAL_ENV=local``. So we
+    can't just check ``"TERMINAL_ENV" in os.environ`` — we need to ask
+    "did the operator actually pin this, or is it the schema default
+    bleeding through?". :func:`_operator_has_chosen_terminal_backend`
+    answers that.
+
+    Opt-out: set ``TERMINAL_ENV=local`` (or ``ssh`` / any other backend) in
+    the shell before invoking Scarlight, or persist the choice via
+    ``scarlight config set terminal.backend <backend>``. Bypassed scopes
+    (``SCARLIGHT_NO_ENGAGEMENT=1``) are left untouched — internal harnesses
+    and tests don't want their terminal tool quietly switched to Docker.
+    """
+    global _sandbox_default_logged
+
+    if scope.bypassed:
+        return
+    if _operator_has_chosen_terminal_backend():
+        return
+
+    os.environ[_TERMINAL_ENV_VAR] = _TERMINAL_DEFAULT_FOR_ENGAGEMENT
+    if _sandbox_default_logged:
+        return
+    _sandbox_default_logged = True
+    logging.warning(
+        "Engagement active: defaulting %s=%s so offensive commands run "
+        "inside the Kali sandbox (fork-runbook Step 5). Override by "
+        "setting %s explicitly or `scarlight config set terminal.backend "
+        "<backend>`.",
+        _TERMINAL_ENV_VAR,
+        _TERMINAL_DEFAULT_FOR_ENGAGEMENT,
+        _TERMINAL_ENV_VAR,
+    )
+
+
 def assert_active_scope() -> EngagementScope:
     """Load + validate the active scope, or refuse the engagement.
 
     Honors the ``SCARLIGHT_NO_ENGAGEMENT=1`` bypass for internal use.
     Otherwise raises :class:`EngagementScopeError` with an actionable
     message if no valid scope is found.
+
+    On success with a real scope, defaults the terminal backend to Docker
+    (Kali) if the operator hasn't pinned one — see
+    :func:`_enforce_sandboxed_terminal_default`.
     """
     if _bypass_active():
         _warn_bypass_once()
@@ -328,4 +440,5 @@ def assert_active_scope() -> EngagementScope:
     scope = load_active_scope()
     if scope is None:
         raise EngagementScopeError(_refusal_message())
+    _enforce_sandboxed_terminal_default(scope)
     return scope

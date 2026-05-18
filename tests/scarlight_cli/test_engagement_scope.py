@@ -49,10 +49,14 @@ def _clear_bypass(monkeypatch):
     """Tests in this module exercise the guard directly. The session-level
     autouse fixture in tests/conftest.py sets SCARLIGHT_NO_ENGAGEMENT=1 so
     AIAgent.run_conversation tests don't all break; here we clear it so we
-    can test the actual guard behavior. Also resets the warn-once flag."""
+    can test the actual guard behavior. Also resets the warn-once flags
+    and clears TERMINAL_ENV so the sandbox-default helper sees a clean
+    slate."""
     monkeypatch.delenv("SCARLIGHT_NO_ENGAGEMENT", raising=False)
     monkeypatch.delenv("SCARLIGHT_ENGAGEMENT", raising=False)
+    monkeypatch.delenv("TERMINAL_ENV", raising=False)
     monkeypatch.setattr(engagement_scope, "_bypass_warned", False)
+    monkeypatch.setattr(engagement_scope, "_sandbox_default_logged", False)
 
 
 @pytest.fixture
@@ -319,6 +323,99 @@ class TestAssertActiveScope:
             if "Engagement authorization guard bypassed" in r.getMessage()
         ]
         assert len(bypass_warnings) == 1
+
+
+# ── Sandboxed-terminal default (Step 5 + Step 7 coupling) ─────────────────
+
+
+class TestSandboxedTerminalDefault:
+    """A real engagement should force the terminal tool into the Kali
+    sandbox unless the operator has pinned a backend explicitly.
+
+    The hermes-agent inheritance complicates this: ``cli.load_cli_config()``
+    runs at module import and bridges the schema default
+    ``terminal.backend: local`` into ``TERMINAL_ENV=local`` before the
+    engagement guard fires. So a bare ``TERMINAL_ENV=local`` looks identical
+    to no setting at all. The override has to peek at config.yaml / .env
+    to distinguish "operator pinned local" from "schema default leaked".
+    """
+
+    def test_real_scope_defaults_terminal_env_to_docker(self, in_isolated_cwd):
+        # No env var, no config.yaml, no .env → must override to docker.
+        assert "TERMINAL_ENV" not in os.environ
+        _write(in_isolated_cwd / "engagement.yaml", _valid_scope_dict())
+        scope = assert_active_scope()
+        assert not scope.bypassed
+        assert os.environ.get("TERMINAL_ENV") == "docker"
+
+    def test_schema_default_local_is_overridden(self, in_isolated_cwd, monkeypatch):
+        # Mimic cli.load_cli_config()'s pre-emptive bridge: TERMINAL_ENV is
+        # set to the schema default "local" before the guard fires, but
+        # neither config.yaml nor .env actually pins it. Override.
+        monkeypatch.setenv("TERMINAL_ENV", "local")
+        _write(in_isolated_cwd / "engagement.yaml", _valid_scope_dict())
+        assert_active_scope()
+        assert os.environ["TERMINAL_ENV"] == "docker"
+
+    def test_explicit_non_local_terminal_env_is_preserved(
+        self, in_isolated_cwd, monkeypatch
+    ):
+        # Any non-"local" value cannot be a schema-default leak; respect it.
+        monkeypatch.setenv("TERMINAL_ENV", "ssh")
+        _write(in_isolated_cwd / "engagement.yaml", _valid_scope_dict())
+        assert_active_scope()
+        assert os.environ["TERMINAL_ENV"] == "ssh"
+
+    def test_config_yaml_pin_to_local_is_preserved(
+        self, in_isolated_cwd, monkeypatch, tmp_path
+    ):
+        # Operator explicitly wrote terminal.backend: local in config.yaml.
+        # Honor that — don't second-guess them just because we'd default
+        # the other way.
+        home = Path(os.environ["SCARLIGHT_HOME"])
+        (home / "config.yaml").write_text(
+            yaml.safe_dump({"terminal": {"backend": "local"}}),
+            encoding="utf-8",
+        )
+        monkeypatch.setenv("TERMINAL_ENV", "local")  # what cli.py would set
+        _write(in_isolated_cwd / "engagement.yaml", _valid_scope_dict())
+        assert_active_scope()
+        assert os.environ["TERMINAL_ENV"] == "local"
+
+    def test_dotenv_pin_is_preserved(self, in_isolated_cwd, monkeypatch):
+        # Operator persisted via `scarlight config set terminal.backend
+        # local` → ~/.scarlight/.env has the line. Honor it.
+        home = Path(os.environ["SCARLIGHT_HOME"])
+        (home / ".env").write_text("TERMINAL_ENV=local\n", encoding="utf-8")
+        monkeypatch.setenv("TERMINAL_ENV", "local")  # mirrors .env loaded by dotenv
+        _write(in_isolated_cwd / "engagement.yaml", _valid_scope_dict())
+        assert_active_scope()
+        assert os.environ["TERMINAL_ENV"] == "local"
+
+    def test_bypass_does_not_set_terminal_env(self, in_isolated_cwd, monkeypatch):
+        # Internal harnesses and the test suite use bypass — we explicitly
+        # don't want their terminal tool quietly switched to Docker.
+        monkeypatch.setenv("SCARLIGHT_NO_ENGAGEMENT", "1")
+        scope = assert_active_scope()
+        assert scope.bypassed
+        assert "TERMINAL_ENV" not in os.environ
+
+    def test_sandbox_default_warning_logged_once_per_process(
+        self, in_isolated_cwd, caplog
+    ):
+        _write(in_isolated_cwd / "engagement.yaml", _valid_scope_dict())
+        with caplog.at_level(logging.WARNING):
+            assert_active_scope()
+            # Second call would re-set TERMINAL_ENV (idempotent); the
+            # warning, however, should fire exactly once per process so
+            # the operator sees it but isn't spammed every turn.
+            assert_active_scope()
+            assert_active_scope()
+        sandbox_warnings = [
+            r for r in caplog.records
+            if "defaulting TERMINAL_ENV=docker" in r.getMessage()
+        ]
+        assert len(sandbox_warnings) == 1
 
 
 # ── EngagementScope summary ────────────────────────────────────────────────
