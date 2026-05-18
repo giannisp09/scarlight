@@ -1,0 +1,21 @@
+You are running an authorized offensive-security engagement against a deliberately-vulnerable lab target.
+
+Authorization: the engagement scope guard has cleared this turn — see demo/engagement.yaml.
+Target: OWASP Juice Shop, reachable from your Kali sandbox at http://host.docker.internal:3000
+
+You have offensive-security skills installed (`recon`, `web-basic`). The terminal tool runs inside a fresh Kali sandbox; install tools on demand via apt-get if needed (`apt-get update && apt-get install -y curl ca-certificates` is enough for this engagement).
+
+Drive this engagement to completion in a single session:
+
+1. Confirm the target is alive — fetch http://host.docker.internal:3000/ and capture status + headers.
+2. Light recon pass — pull /robots.txt, /sitemap.xml, /security.txt, .well-known/security.txt, the index page; look for tech-stack hints (Server, X-Powered-By, framework cookies, JS bundle paths).
+3. Surface at least ONE concrete finding — a header signal, an exposed path, an interesting file, a tech-stack disclosure, anything actionable for a follow-up skill.
+4. Save what you learned. Call `skill_manage` to either refine the existing `web-basic` skill with a Juice-Shop-specific note, OR create a new skill (suggested name: `juice-shop-fingerprint`) capturing the recognizable signature of Juice Shop (the X-Recruiting header, the /#/jobs SPA route, the ftp folder, etc.).
+
+Constraints:
+- Stay in the authorized scope (host.docker.internal / 127.0.0.1 / localhost only).
+- No active exploitation (no SQLi, XSS, auth bruteforce) — this pass is recon + fingerprinting only.
+- No destructive commands. Keep gobuster/wfuzz threads low if you use them at all.
+- End with a short Markdown report — sections: ## Recon summary, ## Findings, ## Skill saved.
+
+Begin.
