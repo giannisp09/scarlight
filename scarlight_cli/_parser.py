@@ -191,6 +191,13 @@ def build_top_level_parser():
     )
     _inherited_flag(
         parser,
+        "--no-scope",
+        action="store_true",
+        default=False,
+        help="Run without an engagement.yaml scope file. Skips the per-turn scope guard and the per-tool-call target check. Suitable for CTF, training, personal lab, or skill development; production-grade authorized engagements should still use engagement.yaml — see CODE_OF_USE.md.",
+    )
+    _inherited_flag(
+        parser,
         "--pass-session-id",
         action="store_true",
         default=False,
@@ -330,6 +337,13 @@ def build_top_level_parser():
         action="store_true",
         default=argparse.SUPPRESS,
         help="Bypass all dangerous command approval prompts (use at your own risk)",
+    )
+    _inherited_flag(
+        chat_parser,
+        "--no-scope",
+        action="store_true",
+        default=argparse.SUPPRESS,
+        help="Run without an engagement.yaml scope file. Skips the per-turn scope guard and the per-tool-call target check. Suitable for CTF, training, personal lab, or skill development; production-grade authorized engagements should still use engagement.yaml — see CODE_OF_USE.md.",
     )
     _inherited_flag(
         chat_parser,

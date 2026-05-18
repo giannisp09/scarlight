@@ -1,15 +1,22 @@
 # Scarlight engagement scope — authorization configuration.
 #
-# Copy this file to one of:
+# This file is for PRODUCTION-GRADE authorized engagements: pentests,
+# bug bounty work, contracted red-team operations, lab work with a
+# named authorization owner. Copy this file to one of:
 #   1. ~/.scarlight/engagement.yaml         (default for single-engagement use)
 #   2. ./engagement.yaml                    (per-working-dir engagement)
 #   3. Anywhere; point SCARLIGHT_ENGAGEMENT=/abs/path at it
 #
-# Scarlight refuses to start a turn without a valid scope on file.
-# See CODE_OF_USE.md for the operator policy this file binds you to.
+# Scarlight refuses to start a turn without a valid scope on file, and
+# the listed targets are enforced at every tool call (terminal, web,
+# browser). See CODE_OF_USE.md for the operator policy this file
+# binds you to.
 #
-# Internal harnesses and the test suite set SCARLIGHT_NO_ENGAGEMENT=1
-# to bypass this guard with a warning. DO NOT set that in production.
+# For CTF, training, personal lab, or skill-development work — where a
+# declared scope isn't applicable — run with `--no-scope` (or set
+# SCARLIGHT_NO_ENGAGEMENT=1). That's the supported opt-out. The test
+# suite and internal harnesses use the same path. The operator remains
+# bound by CODE_OF_USE.md regardless of mode.
 
 # Unique identifier for the engagement. Use whatever convention is
 # meaningful to you (project code, contract reference, CTF event slug).

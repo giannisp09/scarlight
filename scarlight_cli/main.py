@@ -1375,6 +1375,16 @@ def cmd_chat(args):
     if getattr(args, "yolo", False):
         os.environ["SCARLIGHT_YOLO_MODE"] = "1"
 
+    # --no-scope: opt out of engagement.yaml scope enforcement. Same env
+    # var the test suite uses (SCARLIGHT_NO_ENGAGEMENT=1), exposed as a
+    # first-class flag for CTF / training / personal-lab / skill-dev
+    # work where a real engagement scope isn't applicable. The
+    # engagement_scope bypass message acknowledges these legitimate
+    # uses; production-grade authorized engagements should still use
+    # engagement.yaml — see CODE_OF_USE.md.
+    if getattr(args, "no_scope", False):
+        os.environ["SCARLIGHT_NO_ENGAGEMENT"] = "1"
+
     # --ignore-user-config: make load_cli_config() / load_config() skip the
     # user's ~/.scarlight/config.yaml and return built-in defaults. Set BEFORE
     # importing cli (which runs `CLI_CONFIG = load_cli_config()` at module

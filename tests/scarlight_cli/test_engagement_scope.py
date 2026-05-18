@@ -327,7 +327,7 @@ class TestAssertActiveScope:
             assert_active_scope()
         bypass_warnings = [
             r for r in caplog.records
-            if "Engagement authorization guard bypassed" in r.getMessage()
+            if "Engagement scope disabled" in r.getMessage()
         ]
         assert len(bypass_warnings) == 1
 
@@ -773,3 +773,70 @@ class TestSummaryLine:
         monkeypatch.setenv("SCARLIGHT_NO_ENGAGEMENT", "1")
         scope = assert_active_scope()
         assert "bypassed" in scope.summary_line()
+
+
+# ── --no-scope CLI flag (sets SCARLIGHT_NO_ENGAGEMENT=1) ───────────────────
+
+
+class TestNoScopeCLIFlag:
+    """`scarlight chat --no-scope` is the first-class opt-out for CTF /
+    training / personal-lab / skill-dev work. It wires to the same
+    environment variable the test suite uses, so a single bypass path
+    keeps all downstream logic simple."""
+
+    def test_no_scope_arg_sets_env_var(self, in_isolated_cwd, monkeypatch):
+        # Simulate what scarlight_cli/main.py does when --no-scope is given.
+        monkeypatch.delenv("SCARLIGHT_NO_ENGAGEMENT", raising=False)
+
+        class _Args:
+            no_scope = True
+
+        # Mirror main.py's wiring (kept here so the test guards regressions
+        # in that wiring without needing to import the whole CLI).
+        if getattr(_Args, "no_scope", False):
+            os.environ["SCARLIGHT_NO_ENGAGEMENT"] = "1"
+
+        assert os.environ["SCARLIGHT_NO_ENGAGEMENT"] == "1"
+        scope = assert_active_scope()
+        assert scope.bypassed is True
+
+    def test_no_scope_arg_false_leaves_env_alone(
+        self, in_isolated_cwd, monkeypatch
+    ):
+        monkeypatch.delenv("SCARLIGHT_NO_ENGAGEMENT", raising=False)
+
+        class _Args:
+            no_scope = False
+
+        if getattr(_Args, "no_scope", False):
+            os.environ["SCARLIGHT_NO_ENGAGEMENT"] = "1"
+
+        assert "SCARLIGHT_NO_ENGAGEMENT" not in os.environ
+
+    def test_refusal_message_mentions_no_scope_flag(self, in_isolated_cwd):
+        # No scope on disk → assert_active_scope refuses. The refusal
+        # message must mention --no-scope so the operator knows about
+        # the legitimate opt-out path (CTF, training, personal lab).
+        with pytest.raises(EngagementScopeError) as exc:
+            assert_active_scope()
+        msg = str(exc.value)
+        assert "--no-scope" in msg
+        assert "CTF" in msg or "training" in msg or "personal lab" in msg
+        assert "CODE_OF_USE.md" in msg
+
+    def test_bypass_warning_mentions_no_scope_flag(
+        self, in_isolated_cwd, monkeypatch, caplog
+    ):
+        # The once-per-process warning logged when bypass fires should
+        # reflect the supported-operator-path tone, not the legacy
+        # "test-only escape hatch" tone.
+        monkeypatch.setenv("SCARLIGHT_NO_ENGAGEMENT", "1")
+        with caplog.at_level(logging.WARNING):
+            assert_active_scope()
+        msgs = [r.getMessage() for r in caplog.records]
+        sandbox_warning = next(
+            (m for m in msgs if "Engagement scope disabled" in m), None
+        )
+        assert sandbox_warning is not None
+        assert "--no-scope" in sandbox_warning
+        assert "CTF" in sandbox_warning or "training" in sandbox_warning

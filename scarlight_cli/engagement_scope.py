@@ -1,11 +1,11 @@
 """Engagement-scope authorization guard for Scarlight.
 
-Scarlight is an offensive-security tool. Every engagement that drives the
-agent's turn loop must have an authorization scope on file — a YAML
-``engagement.yaml`` declaring authorized targets, a human-readable
-authorization reference (contract / bug-bounty program / lab), and an
-operator acknowledgment of ``CODE_OF_USE.md``. The pre-flight check sits
-at ``AIAgent.run_conversation()``; with no valid scope, the turn refuses.
+Scarlight is an offensive-security tool. Production-grade engagements
+declare an authorization scope on file — a YAML ``engagement.yaml``
+listing authorized targets, a human-readable authorization reference
+(contract / bug-bounty program / lab), and an operator acknowledgment
+of ``CODE_OF_USE.md``. The pre-flight check sits at
+``AIAgent.run_conversation()``; with no valid scope, the turn refuses.
 
 Discovery order (first match wins):
 
@@ -13,10 +13,19 @@ Discovery order (first match wins):
 2. ``./engagement.yaml`` in the current working directory.
 3. ``<SCARLIGHT_HOME>/engagement.yaml`` (default ``~/.scarlight/``).
 
-Bypass: ``SCARLIGHT_NO_ENGAGEMENT=1`` skips the guard with a warning
-logged once per process. Reserved for internal harnesses (batch_runner,
-rl_cli, mini_swe_runner) and the test suite — NOT for production
-engagements. See ``CODE_OF_USE.md`` and ``engagement.yaml.example``.
+Opt-out (no scope file required, no per-target enforcement):
+
+- CLI:   ``scarlight chat --no-scope``  (or any subcommand)
+- Env:   ``SCARLIGHT_NO_ENGAGEMENT=1 scarlight ...``
+
+This is the operator-supported path for CTF, training, personal lab,
+and skill-development work where a declared engagement scope isn't
+applicable. The bypass is also what the test suite and internal
+harnesses (batch_runner, rl_cli, mini_swe_runner) use. A single neutral
+warning is logged per process so it's visible without being alarming.
+
+The operator remains bound by ``CODE_OF_USE.md`` in either mode — see
+``engagement.yaml.example`` for the production-grade scope shape.
 """
 
 from __future__ import annotations
@@ -316,10 +325,11 @@ def _warn_bypass_once() -> None:
         return
     _bypass_warned = True
     logging.warning(
-        "Engagement authorization guard bypassed: %s=1 is set. "
-        "This is for internal harness / test use only. Production "
-        "engagements MUST run with a valid engagement.yaml — see "
-        "CODE_OF_USE.md.",
+        "Engagement scope disabled (%s=1 / --no-scope). Per-turn scope "
+        "guard and per-tool-call target enforcement are both off for "
+        "this process. Suitable for CTF, training, personal lab, or "
+        "skill development. Production-grade authorized engagements "
+        "should run with a valid engagement.yaml — see CODE_OF_USE.md.",
         _BYPASS_ENV_VAR,
     )
 
@@ -499,20 +509,24 @@ def _refusal_message() -> str:
     return (
         "Refused to start engagement: no authorization scope configuration found.\n"
         "\n"
-        "Scarlight is an offensive-security tool. Every engagement must have a\n"
-        "valid engagement.yaml declaring authorized targets, an authorization\n"
-        "reference, and operator acknowledgment of CODE_OF_USE.md.\n"
+        "Scarlight is an offensive-security tool. Production-grade engagements\n"
+        "are expected to declare an engagement.yaml with authorized targets,\n"
+        "an authorization reference, and operator acknowledgment of\n"
+        "CODE_OF_USE.md — see engagement.yaml.example.\n"
         "\n"
         "Searched (in precedence order):\n"
         f"{searched}\n"
         "\n"
-        f"Fix one of:\n"
+        f"For a production engagement, do one of:\n"
         f"  1. Copy {_EXAMPLE_PATH_HINT} to {home / _HOME_FILENAME} and fill it in.\n"
         f"  2. Copy {_EXAMPLE_PATH_HINT} to ./engagement.yaml for this working dir.\n"
         f"  3. Set {_OVERRIDE_ENV_VAR}=/path/to/engagement.yaml.\n"
         f"\n"
-        f"Internal harnesses and the test suite may set {_BYPASS_ENV_VAR}=1\n"
-        f"to bypass with a warning. Do not set this in production."
+        f"For CTF, training, personal lab, or skill development — where a\n"
+        f"declared engagement scope isn't applicable — run with:\n"
+        f"  scarlight chat --no-scope             (or any other subcommand)\n"
+        f"  {_BYPASS_ENV_VAR}=1 scarlight ...   (env var equivalent)\n"
+        f"The operator remains bound by CODE_OF_USE.md regardless of mode."
     )
 
 
