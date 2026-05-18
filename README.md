@@ -105,4 +105,8 @@ See [`specs/roadmap.md`](./specs/roadmap.md) for the plan and [`specs/fork-runbo
 
 ## Status
 
-**Phase 0 complete — Phase 1 in progress.** The hermes-agent fork has landed and been rebranded (`hermes` → `scarlight`, relicensed Apache-2.0); `uv sync` builds and `scarlight --help` runs. Next is Phase 1 — trimming to the offensive surface, re-aiming the skill library and tool layer at offensive security, adding a minimal authorization guard, and driving one engagement end-to-end. [`specs/`](./specs/) is the committed source of truth; [`specs/fork-runbook.md`](./specs/fork-runbook.md) tracks the step-ordered procedure. The 11-pillar design in [`docs/`](./docs/) is earlier exploration — parked, not committed scope.
+**Phases 0 + 1 nearly complete — v1 is shippable.** fork-runbook Steps 1–8 are done: the hermes-agent fork landed, was rebranded (`hermes` → `scarlight`, relicensed Apache-2.0), trimmed to the offensive surface, re-aimed at offensive-security work with seeded `recon` and `web-basic` skills, pinned to a Kali sandbox (`kalilinux/kali-last-release`), gated behind an `engagement.yaml` authorization-scope guard, and driven end-to-end against an OWASP Juice Shop lab — recon → six findings → an autonomously-refined `juice-shop-fingerprint` skill. Step 9 verification gates are being run before declaring v1.0.
+
+A recordable showcase lives at [`demo/`](./demo/) — `demo/run.sh` drives the full engagement in ~3 minutes with seven banner-framed acts (scope-guard refusal → authorization → lab spin-up → Kali sandbox engagement → autonomous skill write → teardown).
+
+[`specs/`](./specs/) is the committed source of truth; [`specs/fork-runbook.md`](./specs/fork-runbook.md) tracks the step-ordered procedure. The 11-pillar design in [`docs/`](./docs/) is earlier exploration — parked, not committed scope.
