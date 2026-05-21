@@ -11,6 +11,8 @@ __pycache__/
 lab/
 engagement.yaml
 !demo/engagement.yaml
+# Local presenter script for live demos — kept out of the repo.
+demo/PITCH.md
 .env
 .env.local
 .env.development.local

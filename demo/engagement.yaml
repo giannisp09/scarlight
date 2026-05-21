@@ -1,45 +1,58 @@
-# Scarlight demo — authorization scope for the OWASP Juice Shop lab.
+# Scarlight v1.1 demo — authorization scope for the two-container attack-chain lab.
 #
-# The Step 7 guard requires every engagement to have a valid scope file
+# The engagement guard requires every engagement to have a valid scope file
 # declaring authorized targets, an authorization reference, and operator
 # acknowledgment of CODE_OF_USE.md. This file is the demo's scope.
 #
-# Target: OWASP Juice Shop (bkimminich/juice-shop), an OWASP-maintained
-# deliberately-vulnerable training application. Started locally in Docker
-# by `demo/start-lab.sh`, bound to 127.0.0.1:3000 — no third party is
-# touched. Reachable from inside the Kali sandbox at host.docker.internal.
+# Targets:
+#   1. web-target   — Flask app with intentional command injection on /ping.
+#                     Bound to 127.0.0.1:8080 by demo/docker-compose.yml.
+#   2. pivot-target — alpine + sshd. The lateral-movement target — reachable
+#                     once the agent steals /root/.ssh/id_rsa from web-target.
+#                     Bound to 127.0.0.1:2222.
 #
-# Replace operator info for your own recording. Keep the targets list as
-# given unless you change start-lab.sh.
+# Reachable from inside the Kali sandbox at host.docker.internal:{8080,2222}.
 
-engagement_id: "scarlight-demo-juice-shop"
+engagement_id: "scarlight-demo-chain"
 
 authorization_reference: >
-  Scarlight v1 demo. Target is OWASP Juice Shop (bkimminich/juice-shop),
-  an OWASP-maintained deliberately-vulnerable training application
-  (MIT-licensed). Run locally in Docker on the operator's machine,
-  bound to host loopback only.
+  Scarlight v1.1 demo. Two-container Linux lab: a Flask web app with
+  intentional command injection (web-target) and an SSH pivot host
+  (pivot-target). Both built from this repo's demo/lab/ Dockerfiles and run
+  locally in Docker on the operator's machine, bound to host loopback only.
+  No third party is touched.
 
 operator_acknowledgment:
   acknowledged: true
   operator: "Demo Operator <operator@example.com>"
-  date: "2026-05-18"
+  date: "2026-05-19"
   code_of_use_version: "1"
 
 targets:
+  # web-target — initial-access host
   - "host.docker.internal"
-  - "host.docker.internal:3000"
-  - "http://host.docker.internal:3000"
-  - "http://host.docker.internal:3000/"
+  - "host.docker.internal:8080"
+  - "http://host.docker.internal:8080"
+  - "http://host.docker.internal:8080/"
   - "127.0.0.1"
-  - "127.0.0.1:3000"
+  - "127.0.0.1:8080"
   - "localhost"
-  - "localhost:3000"
+  - "localhost:8080"
+  # pivot-target — lateral-movement host
+  - "host.docker.internal:2222"
+  - "ssh://host.docker.internal:2222"
+  - "127.0.0.1:2222"
+  - "localhost:2222"
 
 window:
-  start: "2026-05-18T00:00:00Z"
-  end:   "2027-05-18T23:59:59Z"
+  start: "2026-05-19T00:00:00Z"
+  end:   "2027-05-19T23:59:59Z"
 
 notes: |
-  Lab container: scarlight-demo-target (image bkimminich/juice-shop:latest).
-  Brought up by demo/start-lab.sh, torn down by demo/stop-lab.sh.
+  Lab containers: scarlight-demo-web-target (port 8080) and
+  scarlight-demo-pivot (port 2222), brought up by demo/start-lab.sh and
+  torn down by demo/stop-lab.sh.
+
+  Trophy: /root/flag.txt on pivot-target. Cleartext content is
+  SCARLIGHT{l4t3r4l_m0v3m3nt_w1th_4uth0r1z4t10n_v1_1} — not a secret, used
+  as the engagement's success signal.

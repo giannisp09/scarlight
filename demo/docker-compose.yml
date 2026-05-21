@@ -1,0 +1,49 @@
+# Scarlight demo lab — two-container Linux chain for the v1.1 attack-chain demo.
+#
+#   web-target   : tiny Flask app with intentional command injection on /ping.
+#                  Plants /root/.ssh/id_rsa pointing at pivot-target.
+#                  Bound to host loopback: http://127.0.0.1:8080/
+#
+#   pivot-target : alpine + openssh-server. Authorizes the key planted on
+#                  web-target. Carries /root/flag.txt as the trophy.
+#                  Bound to host loopback: ssh -p 2222 root@127.0.0.1
+#
+# Both containers are on a private bridge network (scarlight-demo-lab) AND
+# also exposed on host loopback so the Kali sandbox can reach them via
+# host.docker.internal:8080 / host.docker.internal:2222.
+#
+# Lifecycle: demo/start-lab.sh builds + brings both up; demo/stop-lab.sh
+# tears both down.
+
+services:
+  web-target:
+    build:
+      context: ./lab/web-target
+      dockerfile: Dockerfile
+    container_name: scarlight-demo-web-target
+    ports:
+      - "127.0.0.1:8080:5000"
+    networks:
+      - demo-lab
+    restart: "no"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0) if urllib.request.urlopen('http://127.0.0.1:5000/health',timeout=2).status==200 else sys.exit(1)"]
+      interval: 5s
+      timeout: 3s
+      retries: 6
+
+  pivot-target:
+    build:
+      context: ./lab/pivot-target
+      dockerfile: Dockerfile
+    container_name: scarlight-demo-pivot
+    ports:
+      - "127.0.0.1:2222:22"
+    networks:
+      - demo-lab
+    restart: "no"
+
+networks:
+  demo-lab:
+    name: scarlight-demo-lab
+    driver: bridge

@@ -1,19 +1,21 @@
 #!/usr/bin/env bash
-# Scarlight v1 — recordable demo against the OWASP Juice Shop lab.
+# Scarlight v1.1 — recordable demo against the two-container attack-chain lab.
 #
-# Drives a complete engagement end-to-end with timed banners so a terminal
-# recording (asciinema / OBS / screen capture) has natural beats:
+# Drives a complete kill-chain engagement end-to-end with timed banners so
+# a terminal recording (asciinema / OBS / screen capture) has natural beats:
 #
 #   1. Refusal beat — try to run without scope, watch the guard refuse.
-#   2. Authorization — drop the scope file, show it.
-#   3. Engagement — scarlight chat -q with the demo prompt, tool calls and
-#      reasoning streaming to the terminal inside the Kali sandbox.
-#   4. Payoff — show the autonomously-created skill.
-#   5. Teardown — stop the lab container.
+#   2. Authorization — drop the scope file (2 targets now), show it.
+#   3. Lab up — bring up both containers (web-target + pivot-target).
+#   4. Engagement — scarlight chat -q with the demo prompt; tool calls
+#      stream to the terminal inside the Kali sandbox. Agent runs the full
+#      chain: recon → web-exploit → credential-harvest → lateral-movement.
+#   5. Payoff — show the captured trophy + the autonomously-created skill.
+#   6. Teardown — stop both lab containers.
 #
 # Usage:
-#   demo/run.sh                 # full demo (~3 min)
-#   demo/run.sh --no-refusal    # skip the refusal beat (~2 min)
+#   demo/run.sh                 # full demo (~7 min)
+#   demo/run.sh --no-refusal    # skip the refusal beat
 #   demo/run.sh --no-teardown   # leave the lab running after the demo
 #
 # Requires: docker daemon up, OPENROUTER_API_KEY (or another provider)
@@ -131,19 +133,26 @@ banner "Act 3 · reset prior demo state"
 pause 2
 
 # Bring up the lab.
-banner "Act 4 · bring up the lab target (OWASP Juice Shop)"
-note "Deliberately-vulnerable training app, MIT-licensed, OWASP-maintained."
+banner "Act 4 · bring up the lab (web-target + pivot-target)"
+note "Two purpose-built Linux containers: a Flask app with intentional"
+note "command injection (web-target, port 8080), and an alpine + sshd"
+note "pivot host (pivot-target, port 2222) that trusts a key planted on"
+note "web-target. Both bound to host loopback only."
 "${DEMO_DIR}/start-lab.sh"
 pause 2
 
 # ── act 5 — engagement ─────────────────────────────────────────────────
-banner "Act 5 · engagement — scarlight chat -q (Kali sandbox)"
-note "The guard accepts the scope. TERMINAL_ENV defaults to docker because"
-note "a real engagement is active — every shell command runs inside a"
-note "freshly-launched kalilinux/kali-last-release container, NOT on the"
-note "operator's host. The agent will install curl, probe the target, and"
-note "save what it learns as a skill before exiting."
-pause 4
+banner "Act 5 · engagement — full kill chain (Kali sandbox)"
+note "The guard accepts the scope (both targets are listed). TERMINAL_ENV"
+note "defaults to docker because a real engagement is active — every shell"
+note "command runs inside a freshly-launched kalilinux/kali-last-release"
+note "container, NOT on the operator's host. Watch the agent run:"
+note "  recon → web-exploit (command injection on /ping)"
+note "       → credential-harvest (steal /root/.ssh/id_rsa)"
+note "       → lateral-movement (ssh into pivot-target)"
+note "       → trophy (cat /root/flag.txt)"
+note "Each step writes an entry to ~/.scarlight/audit/exploitation.jsonl."
+pause 5
 
 SCARLIGHT_ENGAGEMENT="${SCOPE_FILE}" scarlight chat \
   -q "$(cat "${PROMPT_FILE}")" \
@@ -151,21 +160,54 @@ SCARLIGHT_ENGAGEMENT="${SCOPE_FILE}" scarlight chat \
   --provider "${PROVIDER}"
 
 # ── act 6 — payoff ─────────────────────────────────────────────────────
-SKILL_DIR="${SCARLIGHT_HOME:-$HOME/.scarlight}/skills/offensive/juice-shop-fingerprint"
-banner "Act 6 · payoff — the agent taught itself a new skill"
-if [[ -f "${SKILL_DIR}/SKILL.md" ]]; then
-  ok "new skill written: ${SKILL_DIR}/SKILL.md"
-  echo
-  note "Frontmatter:"
-  sed -n '1,/^---$/{/^---$/d;p;}' "${SKILL_DIR}/SKILL.md" | head -15 | sed 's/^/    /'
-  echo
-  note "Every future engagement against Juice Shop will start with this card"
-  note "loaded — the agent is strictly more capable than it was 3 minutes ago."
+banner "Act 6 · payoff — trophy + audit trail + new skill"
+
+# Trophy — agent should have written it into the session, but we can also
+# verify the flag is reachable from the operator side as ground truth.
+TROPHY="$(ssh -i "${DEMO_DIR}/lab/web-target/id_rsa" \
+            -o StrictHostKeyChecking=no \
+            -o UserKnownHostsFile=/dev/null \
+            -o ConnectTimeout=5 \
+            -o BatchMode=yes \
+            -p 2222 root@127.0.0.1 'cat /root/flag.txt' 2>/dev/null || true)"
+if [[ -n "${TROPHY}" ]]; then
+  ok "trophy on pivot-target (operator-side verification): ${TROPHY}"
 else
-  fail "expected skill at ${SKILL_DIR} but it was not created"
-  fail "(the agent may have refined an existing skill instead — check"
-  fail " ~/.scarlight/skills/offensive/ and the session record)"
+  note "(could not verify trophy from operator side; check the agent transcript above)"
 fi
+
+# Audit log — bind-mounted out of the Kali sandbox to the operator host at the
+# canonical path by engagement_scope._persist_engagement_audit_trail(), and
+# each line is stamped with the engagement_id.
+AUDIT_LOG="${SCARLIGHT_HOME:-$HOME/.scarlight}/audit/exploitation.jsonl"
+if [[ -f "${AUDIT_LOG}" ]]; then
+  COUNT="$(wc -l <"${AUDIT_LOG}" | tr -d ' ')"
+  ok "audit log: ${COUNT} entries at ${AUDIT_LOG}"
+  note "    last 3 skills logged (skill · outcome · target · engagement):"
+  if command -v jq >/dev/null 2>&1; then
+    tail -3 "${AUDIT_LOG}" | jq -r '"        \(.ts)  \(.skill_name)  \(.outcome)  \(.target)  [\(.engagement_id)]"' 2>/dev/null \
+      || tail -3 "${AUDIT_LOG}" | sed 's/^/        /'
+  else
+    tail -3 "${AUDIT_LOG}" | sed 's/^/        /'
+  fi
+else
+  note "(no audit-log file found at ${AUDIT_LOG})"
+fi
+echo
+
+# New skill — agent should have written one capturing this chain.
+for SKILL_NAME in nettools-exploit chain-demo; do
+  SKILL_DIR="${SCARLIGHT_HOME:-$HOME/.scarlight}/skills/offensive/${SKILL_NAME}"
+  if [[ -f "${SKILL_DIR}/SKILL.md" ]]; then
+    ok "new skill written: ${SKILL_DIR}/SKILL.md"
+    echo
+    note "Frontmatter:"
+    sed -n '1,/^---$/{/^---$/d;p;}' "${SKILL_DIR}/SKILL.md" | head -15 | sed 's/^/    /'
+    echo
+    note "Every future engagement against this kind of target will load this card."
+    break
+  fi
+done
 pause 4
 
 # Session record — proof the engagement was captured.
