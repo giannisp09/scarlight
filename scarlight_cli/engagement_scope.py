@@ -31,6 +31,7 @@ The operator remains bound by ``CODE_OF_USE.md`` in either mode — see
 from __future__ import annotations
 
 import ipaddress
+import json
 import logging
 import os
 import re
@@ -53,6 +54,22 @@ _CWD_FILENAME = "engagement.yaml"
 _HOME_FILENAME = "engagement.yaml"
 _EXAMPLE_PATH_HINT = "engagement.yaml.example"
 
+# Audit-trail wiring. The exploitation skills' ``audit_log`` helper
+# (skills/offensive/CONVENTIONS.md §3) stamps each JSONL line with these two
+# env vars and writes to ``$HOME/.scarlight/audit`` inside the Kali sandbox.
+# ``_persist_engagement_audit_trail`` exports the identity vars, forwards them
+# into the container, and bind-mounts the host audit dir at the path below so
+# the trail survives the container's lifetime.
+_ENGAGEMENT_ID_ENV_VAR = "SCARLIGHT_ENGAGEMENT_ID"
+_SCOPE_REF_ENV_VAR = "SCARLIGHT_SCOPE_REF"
+_DOCKER_VOLUMES_ENV_VAR = "TERMINAL_DOCKER_VOLUMES"
+_DOCKER_FORWARD_ENV_VAR = "TERMINAL_DOCKER_FORWARD_ENV"
+# Container HOME is /root; the helper's default log dir is
+# ``$HOME/.scarlight/audit``. Mount the host audit dir here so the in-container
+# path the skill writes to and the host path the operator reads are the same.
+_CONTAINER_AUDIT_DIR = "/root/.scarlight/audit"
+_SCOPE_REF_MAX_LEN = 300
+
 _TRUTHY = frozenset({"1", "true", "yes", "on"})
 
 # Set true once we've logged the bypass-active warning so we don't spam
@@ -62,6 +79,9 @@ _bypass_warned: bool = False
 # Set true once we've logged the sandbox-default warning per process —
 # operators only need to see "I defaulted you to Docker" once.
 _sandbox_default_logged: bool = False
+
+# Set true once we've logged the audit-trail-persistence info per process.
+_audit_trail_logged: bool = False
 
 # Per-process cache of the currently-active EngagementScope. Populated by
 # ``assert_active_scope()`` so tools (terminal, web, browser) can fetch the
@@ -632,6 +652,133 @@ def _enforce_sandboxed_terminal_default(scope: EngagementScope) -> None:
     )
 
 
+def _oneline_scope_ref(scope: EngagementScope) -> str:
+    """Collapse the authorization reference into one capped line for the audit
+    trail. ``authorization_reference`` is often a multi-line YAML block; the
+    audit JSONL wants a single readable token pointing back to the authorizing
+    document (CONVENTIONS.md §3 ``scope_ref``)."""
+    ref = re.sub(r"\s+", " ", scope.authorization_reference or "").strip()
+    if len(ref) > _SCOPE_REF_MAX_LEN:
+        ref = ref[: _SCOPE_REF_MAX_LEN - 1].rstrip() + "…"
+    return ref
+
+
+def _merge_json_list_env(var_name: str, additions: List[str]) -> None:
+    """Idempotently append string entries to a JSON-list env var.
+
+    ``TERMINAL_DOCKER_VOLUMES`` and ``TERMINAL_DOCKER_FORWARD_ENV`` are
+    JSON-list env vars the terminal tool parses (``tools/terminal_tool.py``
+    ``_get_env_config``). We append rather than overwrite so an operator's own
+    docker volumes / forwarded vars survive. Re-entrant: ``assert_active_scope``
+    runs every turn, so entries already present are not duplicated. A malformed
+    existing value is logged and left untouched, so the operator's own parse
+    error still surfaces downstream rather than being masked here.
+    """
+    current_raw = os.environ.get(var_name)
+    base: List[str] = []
+    if current_raw:
+        try:
+            parsed = json.loads(current_raw)
+        except (ValueError, TypeError):
+            logging.warning(
+                "%s is not valid JSON (%r); skipping engagement audit-trail "
+                "injection so the existing value's parse error surfaces "
+                "normally downstream.",
+                var_name,
+                current_raw,
+            )
+            return
+        if not isinstance(parsed, list):
+            logging.warning(
+                "%s is not a JSON list (%r); skipping engagement audit-trail "
+                "injection.",
+                var_name,
+                current_raw,
+            )
+            return
+        base = [str(x) for x in parsed]
+
+    changed = False
+    for item in additions:
+        if item not in base:
+            base.append(item)
+            changed = True
+    if changed:
+        os.environ[var_name] = json.dumps(base)
+
+
+def _persist_engagement_audit_trail(scope: EngagementScope) -> None:
+    """Make the exploitation audit trail real for this engagement.
+
+    Two coupled effects, both required for the JSONL audit log that every
+    active/destructive skill writes (``skills/offensive/CONVENTIONS.md`` §3) to
+    be useful instead of anonymous-and-ephemeral:
+
+    1. **Identity** — export ``SCARLIGHT_ENGAGEMENT_ID`` and
+       ``SCARLIGHT_SCOPE_REF`` so each audit line is stamped with the
+       engagement and its authorization reference rather than ``"unknown"``.
+       The ``audit_log`` helper reads exactly these two env vars.
+
+    2. **Persistence** — exploitation skills run inside the Kali Docker sandbox
+       (:func:`_enforce_sandboxed_terminal_default`); a JSONL appended to
+       ``~/.scarlight/audit`` *inside* the container dies with the container.
+       Bind-mount the operator's host audit dir into the sandbox at the same
+       path the helper writes to, and forward the two identity vars into the
+       container, so the trail accumulates on the host across runs.
+
+    Both effects go through the terminal tool's existing JSON-list env knobs
+    (``TERMINAL_DOCKER_VOLUMES`` / ``TERMINAL_DOCKER_FORWARD_ENV``), mirroring
+    how :func:`_enforce_sandboxed_terminal_default` bridges ``TERMINAL_ENV``.
+    Local/SSH backends ignore the docker knobs but still inherit the exported
+    identity vars. Bypassed scopes (``--no-scope``) are skipped — those runs are
+    unscoped by definition and the helper records ``"unknown"`` per CONVENTIONS
+    §3.
+    """
+    global _audit_trail_logged
+
+    if scope.bypassed:
+        return
+
+    os.environ[_ENGAGEMENT_ID_ENV_VAR] = scope.engagement_id
+    os.environ[_SCOPE_REF_ENV_VAR] = _oneline_scope_ref(scope)
+
+    # Forward the identity vars into the Kali sandbox; they're now in this
+    # process's env, so name-based forwarding reaches the in-container skill.
+    _merge_json_list_env(
+        _DOCKER_FORWARD_ENV_VAR,
+        [_ENGAGEMENT_ID_ENV_VAR, _SCOPE_REF_ENV_VAR],
+    )
+
+    # Bind-mount the host audit dir into the sandbox at the helper's default
+    # log path so exploitation.jsonl persists to the operator's host trail.
+    audit_dir = get_scarlight_home() / "audit"
+    try:
+        audit_dir.mkdir(parents=True, exist_ok=True)
+    except OSError as exc:
+        logging.warning(
+            "Could not create host audit dir %s (%s); the exploitation audit "
+            "log will not persist to the host this run.",
+            audit_dir,
+            exc,
+        )
+        return
+    _merge_json_list_env(
+        _DOCKER_VOLUMES_ENV_VAR,
+        [f"{audit_dir}:{_CONTAINER_AUDIT_DIR}"],
+    )
+
+    if _audit_trail_logged:
+        return
+    _audit_trail_logged = True
+    logging.info(
+        "Engagement active: exploitation audit trail -> %s (mounted into the "
+        "Kali sandbox at %s; entries stamped engagement_id=%s).",
+        audit_dir / "exploitation.jsonl",
+        _CONTAINER_AUDIT_DIR,
+        scope.engagement_id,
+    )
+
+
 def _format_refusal_for_unauthorized(
     unauthorized: List[str], scope: "EngagementScope"
 ) -> str:
@@ -735,7 +882,9 @@ def assert_active_scope() -> EngagementScope:
 
     On success with a real scope, defaults the terminal backend to Docker
     (Kali) if the operator hasn't pinned one — see
-    :func:`_enforce_sandboxed_terminal_default`.
+    :func:`_enforce_sandboxed_terminal_default` — and wires up the exploitation
+    audit trail (identity env vars + host bind-mount) via
+    :func:`_persist_engagement_audit_trail`.
 
     Side effect: stores the returned scope into the module-level
     :data:`_active_scope` so :func:`get_active_scope` (used by tool
@@ -753,5 +902,6 @@ def assert_active_scope() -> EngagementScope:
     if scope is None:
         raise EngagementScopeError(_refusal_message())
     _enforce_sandboxed_terminal_default(scope)
+    _persist_engagement_audit_trail(scope)
     _active_scope = scope
     return scope

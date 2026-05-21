@@ -6,6 +6,7 @@ tests cover discovery, validation, and the internal-use bypass env var.
 
 from __future__ import annotations
 
+import json
 import logging
 import os
 from datetime import datetime, timedelta, timezone
@@ -56,13 +57,19 @@ def _clear_bypass(monkeypatch):
     AIAgent.run_conversation tests don't all break; here we clear it so we
     can test the actual guard behavior. Also resets the warn-once flags,
     clears TERMINAL_ENV so the sandbox-default helper sees a clean slate,
-    and resets the active-scope cache so get_active_scope() doesn't
-    leak between tests."""
+    clears the audit-trail env vars (which assert_active_scope sets via
+    os.environ directly), and resets the active-scope cache so
+    get_active_scope() doesn't leak between tests."""
     monkeypatch.delenv("SCARLIGHT_NO_ENGAGEMENT", raising=False)
     monkeypatch.delenv("SCARLIGHT_ENGAGEMENT", raising=False)
     monkeypatch.delenv("TERMINAL_ENV", raising=False)
+    monkeypatch.delenv("SCARLIGHT_ENGAGEMENT_ID", raising=False)
+    monkeypatch.delenv("SCARLIGHT_SCOPE_REF", raising=False)
+    monkeypatch.delenv("TERMINAL_DOCKER_VOLUMES", raising=False)
+    monkeypatch.delenv("TERMINAL_DOCKER_FORWARD_ENV", raising=False)
     monkeypatch.setattr(engagement_scope, "_bypass_warned", False)
     monkeypatch.setattr(engagement_scope, "_sandbox_default_logged", False)
+    monkeypatch.setattr(engagement_scope, "_audit_trail_logged", False)
     monkeypatch.setattr(engagement_scope, "_active_scope", None)
 
 
@@ -423,6 +430,126 @@ class TestSandboxedTerminalDefault:
             if "defaulting TERMINAL_ENV=docker" in r.getMessage()
         ]
         assert len(sandbox_warnings) == 1
+
+
+# ── Exploitation audit trail (Step 7 + v1.1 audit-log helper coupling) ─────
+
+
+class TestAuditTrailPersistence:
+    """A real engagement makes the exploitation audit trail real:
+
+    1. exports SCARLIGHT_ENGAGEMENT_ID / SCARLIGHT_SCOPE_REF so the
+       audit_log helper (skills/offensive/CONVENTIONS.md §3) stamps each
+       JSONL line instead of writing "unknown";
+    2. bind-mounts the host audit dir into the Kali sandbox and forwards the
+       identity vars in, so exploitation.jsonl survives the container.
+
+    Mirrors TestSandboxedTerminalDefault — both assert side effects of
+    assert_active_scope() that bridge engagement state into the terminal
+    tool's env knobs.
+    """
+
+    def _audit_mount(self) -> str:
+        home = Path(os.environ["SCARLIGHT_HOME"])
+        return f"{home / 'audit'}:{engagement_scope._CONTAINER_AUDIT_DIR}"
+
+    def test_real_scope_exports_identity_env_vars(self, in_isolated_cwd):
+        _write(in_isolated_cwd / "engagement.yaml", _valid_scope_dict())
+        assert_active_scope()
+        assert os.environ["SCARLIGHT_ENGAGEMENT_ID"] == "test-engagement-001"
+        # _valid_scope_dict()'s authorization_reference is "test fixture".
+        assert os.environ["SCARLIGHT_SCOPE_REF"] == "test fixture"
+
+    def test_scope_ref_collapses_whitespace(self, in_isolated_cwd):
+        data = _valid_scope_dict()
+        data["authorization_reference"] = "line one\n  line two\n\nline three"
+        _write(in_isolated_cwd / "engagement.yaml", data)
+        assert_active_scope()
+        assert os.environ["SCARLIGHT_SCOPE_REF"] == "line one line two line three"
+
+    def test_scope_ref_capped_in_length(self, in_isolated_cwd):
+        data = _valid_scope_dict()
+        data["authorization_reference"] = "A" * 350
+        _write(in_isolated_cwd / "engagement.yaml", data)
+        assert_active_scope()
+        ref = os.environ["SCARLIGHT_SCOPE_REF"]
+        assert len(ref) == engagement_scope._SCOPE_REF_MAX_LEN
+        assert ref.endswith("…")
+
+    def test_real_scope_injects_audit_volume_mount(self, in_isolated_cwd):
+        _write(in_isolated_cwd / "engagement.yaml", _valid_scope_dict())
+        assert_active_scope()
+        volumes = json.loads(os.environ["TERMINAL_DOCKER_VOLUMES"])
+        assert self._audit_mount() in volumes
+        # the host audit dir is created so the bind mount has a source
+        assert (Path(os.environ["SCARLIGHT_HOME"]) / "audit").is_dir()
+
+    def test_real_scope_forwards_identity_vars_into_container(self, in_isolated_cwd):
+        _write(in_isolated_cwd / "engagement.yaml", _valid_scope_dict())
+        assert_active_scope()
+        forwarded = json.loads(os.environ["TERMINAL_DOCKER_FORWARD_ENV"])
+        assert "SCARLIGHT_ENGAGEMENT_ID" in forwarded
+        assert "SCARLIGHT_SCOPE_REF" in forwarded
+
+    def test_audit_wiring_is_idempotent_across_turns(self, in_isolated_cwd):
+        _write(in_isolated_cwd / "engagement.yaml", _valid_scope_dict())
+        assert_active_scope()
+        assert_active_scope()
+        assert_active_scope()
+        volumes = json.loads(os.environ["TERMINAL_DOCKER_VOLUMES"])
+        forwarded = json.loads(os.environ["TERMINAL_DOCKER_FORWARD_ENV"])
+        assert volumes.count(self._audit_mount()) == 1
+        assert forwarded.count("SCARLIGHT_ENGAGEMENT_ID") == 1
+        assert forwarded.count("SCARLIGHT_SCOPE_REF") == 1
+
+    def test_operator_docker_volumes_are_preserved(
+        self, in_isolated_cwd, monkeypatch
+    ):
+        monkeypatch.setenv("TERMINAL_DOCKER_VOLUMES", json.dumps(["/my/vol:/data"]))
+        _write(in_isolated_cwd / "engagement.yaml", _valid_scope_dict())
+        assert_active_scope()
+        volumes = json.loads(os.environ["TERMINAL_DOCKER_VOLUMES"])
+        assert "/my/vol:/data" in volumes  # operator's mount survives
+        assert self._audit_mount() in volumes  # audit mount appended
+
+    def test_malformed_docker_volumes_left_untouched(
+        self, in_isolated_cwd, monkeypatch, caplog
+    ):
+        monkeypatch.setenv("TERMINAL_DOCKER_VOLUMES", "not json")
+        _write(in_isolated_cwd / "engagement.yaml", _valid_scope_dict())
+        with caplog.at_level(logging.WARNING):
+            assert_active_scope()
+        # malformed value preserved so its parse error surfaces normally
+        assert os.environ["TERMINAL_DOCKER_VOLUMES"] == "not json"
+        # identity vars still exported (set before the mount step)
+        assert os.environ["SCARLIGHT_ENGAGEMENT_ID"] == "test-engagement-001"
+        assert any(
+            "TERMINAL_DOCKER_VOLUMES is not valid JSON" in r.getMessage()
+            for r in caplog.records
+        )
+
+    def test_bypass_does_not_export_identity_or_mount(
+        self, in_isolated_cwd, monkeypatch
+    ):
+        monkeypatch.setenv("SCARLIGHT_NO_ENGAGEMENT", "1")
+        scope = assert_active_scope()
+        assert scope.bypassed
+        assert "SCARLIGHT_ENGAGEMENT_ID" not in os.environ
+        assert "SCARLIGHT_SCOPE_REF" not in os.environ
+        assert "TERMINAL_DOCKER_VOLUMES" not in os.environ
+        assert "TERMINAL_DOCKER_FORWARD_ENV" not in os.environ
+
+    def test_audit_trail_info_logged_once_per_process(self, in_isolated_cwd, caplog):
+        _write(in_isolated_cwd / "engagement.yaml", _valid_scope_dict())
+        with caplog.at_level(logging.INFO):
+            assert_active_scope()
+            assert_active_scope()
+            assert_active_scope()
+        records = [
+            r for r in caplog.records
+            if "exploitation audit trail" in r.getMessage()
+        ]
+        assert len(records) == 1
 
 
 # ── Active-scope cache (get_active_scope) ──────────────────────────────────
