@@ -11,12 +11,13 @@ metadata:
   scarlight:
     tags: [web, recon, fingerprinting, offensive]
     phase: discovery
-    related_skills: [recon]
+    related_skills: [recon, web-exploit]
+    risk_level: passive
 ---
 
 # Web-basic — surface map + low-hanging triage
 
-Map the visible structure and configuration of a web application that is in the active engagement scope. Output feeds an exploitation skill (separate). This skill does **not** attempt SQLi, XSS payloads, command injection, or auth bypass — it surfaces signal that justifies (or rules out) trying.
+Map the visible structure and configuration of a web application that is in the active engagement scope. Output feeds the [`web-exploit`](../web-exploit/SKILL.md) skill. This skill does **not** attempt SQLi, XSS payloads, command injection, or auth bypass — it surfaces the signal (injection-prone parameters, framework, cookies, discovered paths, JS-leaked endpoints) that `web-exploit` then turns into confirmed vulns.
 
 ## When to use
 
@@ -107,9 +108,9 @@ Persist per target:
 
 ## What this skill is NOT for
 
-- Active exploitation: SQLi, XSS, SSRF, command injection — **separate skill**.
-- Auth brute-force / credential stuffing — **separate skill**, requires explicit scope.
+- Active exploitation: SQLi, XSS, SSRF, command injection — hand off to [`web-exploit`](../web-exploit/SKILL.md).
+- Auth brute-force / credential stuffing — hand off to [`password-attack`](../password-attack/SKILL.md), which enforces rate caps; this skill does not generate authentication traffic.
 - DoS-shaped probing (large gobuster lists, high concurrency) — out of scope.
 - Targets not in the engagement scope — refuse, don't run.
 
-When the surface map is clear enough to choose a likely vulnerability class, hand off to the appropriate exploitation skill rather than expanding this one.
+When the surface map is clear enough to choose a likely vulnerability class, hand off to [`web-exploit`](../web-exploit/SKILL.md) rather than expanding this one.

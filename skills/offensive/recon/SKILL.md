@@ -11,7 +11,8 @@ metadata:
   scarlight:
     tags: [recon, enumeration, nmap, offensive]
     phase: discovery
-    related_skills: [web-basic]
+    related_skills: [web-basic, service-exploit]
+    risk_level: passive
 ---
 
 # Recon — basic enumeration
@@ -80,6 +81,8 @@ curl -sk  "https://$TARGET/sitemap.xml"
 ```
 
 If a web port is open, hand off to the [`web-basic`](../web-basic/SKILL.md) skill rather than going deeper here.
+
+For non-web services with a captured product + version (SSH, FTP, SMB, RDP, RPC, SMTP, databases, etc.), hand off to [`service-exploit`](../service-exploit/SKILL.md) — that skill does the CVE lookup (`searchsploit`) and, on operator confirmation, the one-shot exploit attempt.
 
 ## Output — what to record
 
