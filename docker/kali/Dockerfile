@@ -37,6 +37,9 @@ ENV DEBIAN_FRONTEND=noninteractive
 ENV SCARLIGHT_PAYLOAD_DIR=/opt/scarlight/payloads
 
 # Pinned versions for the binaries we fetch at build time. Bump deliberately.
+# NOTE: these download-pin ARGs sit above the apt layer for historical cache
+# reasons; bumping one re-runs apt. PEASS_VERSION is declared lower (just before
+# the payloads layer) so PEASS bumps DON'T re-run apt.
 ARG GOPHISH_VERSION=0.12.1
 ARG MIMIKATZ_VERSION=2.2.0-20220919
 # PowerSploit is archived; pin a commit so PowerUp.ps1 is reproducible.
@@ -92,13 +95,19 @@ RUN mkdir -p /opt/gophish && \
 # ---------- Target-delivered binaries (staged, not run in sandbox) ----------
 # linpeas / winpeas from PEASS-ng latest, mimikatz from gentilkiwi, PowerUp.ps1
 # from the archived PowerSploit. Served target-ward by the agent; see §11.
+#
+# PEASS-ng release tag, pinned (not `latest`) for reproducibility. Declared here
+# (below apt) so a PEASS bump rebuilds only this layer, not the apt layer.
+# linpeas.sh + winPEASx64.exe are release assets; winPEAS.ps1 is NOT published as
+# an asset, so it's pulled from the repo tree at the same tag.
+ARG PEASS_VERSION=20260604-085abf96
 RUN mkdir -p "${SCARLIGHT_PAYLOAD_DIR}" && \
     curl -fsSL -o "${SCARLIGHT_PAYLOAD_DIR}/linpeas.sh" \
-      "https://github.com/peass-ng/PEASS-ng/releases/latest/download/linpeas.sh" && \
+      "https://github.com/peass-ng/PEASS-ng/releases/download/${PEASS_VERSION}/linpeas.sh" && \
     curl -fsSL -o "${SCARLIGHT_PAYLOAD_DIR}/winPEASx64.exe" \
-      "https://github.com/peass-ng/PEASS-ng/releases/latest/download/winPEASx64.exe" && \
+      "https://github.com/peass-ng/PEASS-ng/releases/download/${PEASS_VERSION}/winPEASx64.exe" && \
     curl -fsSL -o "${SCARLIGHT_PAYLOAD_DIR}/winPEAS.ps1" \
-      "https://github.com/peass-ng/PEASS-ng/releases/latest/download/winPEAS.ps1" && \
+      "https://raw.githubusercontent.com/peass-ng/PEASS-ng/${PEASS_VERSION}/winPEAS/winPEASps1/winPEAS.ps1" && \
     curl -fsSL -o "${SCARLIGHT_PAYLOAD_DIR}/PowerUp.ps1" \
       "https://raw.githubusercontent.com/PowerShellMafia/PowerSploit/${POWERSPLOIT_REF}/Privesc/PowerUp.ps1" && \
     curl -fsSL -o /tmp/mimikatz.zip \

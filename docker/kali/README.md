@@ -64,5 +64,7 @@ A local build has no registry digest, so it can't be digest-pinned the way
 update `DEFAULT_TERMINAL_IMAGE`. Until then it's an explicit per-operator opt-in.
 
 Bump baked binary versions via the `ARG`s at the top of the `Dockerfile`
-(`GOPHISH_VERSION`, `MIMIKATZ_VERSION`, `POWERSPLOIT_REF`); linpeas/winpeas track
-PEASS-ng `latest`.
+(`GOPHISH_VERSION`, `MIMIKATZ_VERSION`, `POWERSPLOIT_REF`, `PEASS_VERSION`). All
+are pinned for reproducibility — `PEASS_VERSION` is a release tag; linpeas.sh and
+winPEASx64.exe come from that release's assets, and winPEAS.ps1 (not published as
+an asset) is pulled from the repo tree at the same tag.
