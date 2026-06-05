@@ -76,6 +76,12 @@ _TRUTHY = frozenset({"1", "true", "yes", "on"})
 # the logs every turn. Reset only by interpreter restart.
 _bypass_warned: bool = False
 
+# Set true once we've logged the "running without an engagement" notice.
+# Engagements are opt-in (see assert_active_scope); a plain session with no
+# engagement.yaml is the normal case, so this is an info-level one-liner, not
+# a warning. Reset only by interpreter restart.
+_no_engagement_warned: bool = False
+
 # Set true once we've logged the sandbox-default warning per process —
 # operators only need to see "I defaulted you to Docker" once.
 _sandbox_default_logged: bool = False
@@ -112,6 +118,29 @@ _IPV4_RE = re.compile(r"\b(?:\d{1,3}\.){3}\d{1,3}\b")
 
 # Token splitter for the IPv6 pass: shell punctuation + whitespace.
 _TOKEN_SPLIT_RE = re.compile(r"[\s;|&<>(){}\"'=,]+")
+
+# File-extension suffixes the FQDN pattern spuriously matches as domains.
+# Skill bodies are full of ``label.ext`` tokens that are local artifacts,
+# not network hosts: the canonical ``audit_log`` helper writes
+# ``exploitation.jsonl`` (skills/offensive/CONVENTIONS.md §3), payload/XXE
+# files like ``xxe.xml``, status dumps like ``status.jsonl``. Without this
+# exemption the per-tool scope gate refuses those commands as "out of
+# scope domains" — which broke every exploitation skill's audit trail (and
+# even ``cat ~/.scarlight/audit/exploitation.jsonl``) under a real engagement.
+#
+# Safety: every entry here is verified NOT to be an IANA-delegated TLD, so a
+# real domain is never dropped — there is no false-negative risk. Suffixes
+# that DO collide with a ccTLD/gTLD (``.sh``, ``.py``, ``.zip``, ``.so``,
+# ``.md`` …) are deliberately left OUT; tokens like ``linpeas.sh`` keep the
+# original conservative over-match (a harmless extra refusal the agent works
+# around) rather than risk masking a real ``*.sh`` target.
+_LOCAL_FILE_SUFFIXES = frozenset({
+    "jsonl", "json", "yaml", "yml", "toml", "txt", "log", "csv", "tsv",
+    "conf", "cfg", "ini", "rc", "lock", "pid", "tmp", "bak", "out", "err",
+    "rst", "exe", "dll", "bin", "db", "sqlite", "sqlite3", "kdbx", "pcap",
+    "pcapng", "php", "phtml", "phar", "svg", "xml", "html", "htm", "css",
+    "pem", "crt", "cer", "key", "pub",
+})
 
 
 class EngagementScopeError(RuntimeError):
@@ -201,6 +230,12 @@ def _extract_network_targets_from_command(command: str) -> List[str]:
     for match in _URL_RE.findall(command):
         found.add(match)
     for match in _FQDN_RE.findall(command):
+        # Skip local filenames the FQDN pattern over-matches (audit logs,
+        # payloads, tool scripts) — see _LOCAL_FILE_SUFFIXES. URLs that
+        # happen to end in one of these suffixes are caught by _URL_RE
+        # above, so a real ``https://host/x.xml`` is still enforced.
+        if match.rsplit(".", 1)[-1].lower() in _LOCAL_FILE_SUFFIXES:
+            continue
         found.add(match)
     for match in _IPV4_RE.findall(command):
         found.add(match)
@@ -351,6 +386,44 @@ def _warn_bypass_once() -> None:
         "skill development. Production-grade authorized engagements "
         "should run with a valid engagement.yaml — see CODE_OF_USE.md.",
         _BYPASS_ENV_VAR,
+    )
+
+
+def _no_engagement_scope() -> EngagementScope:
+    """The permissive scope used when no engagement.yaml is declared.
+
+    Engagements are opt-in. A plain agent session (no engagement.yaml on any
+    discovery path) runs unscoped: ``bypassed=True`` so the per-turn guard and
+    per-tool target enforcement short-circuit to "allow", exactly like the
+    explicit ``--no-scope`` bypass. The distinct ``engagement_id`` keeps the
+    two apart in logs / audit. A *present-but-invalid* engagement.yaml still
+    raises via :func:`load_active_scope` — declaring scope and getting it wrong
+    is a real error, not "no engagement".
+    """
+    return EngagementScope(
+        engagement_id="none:no-engagement",
+        authorization_reference=(
+            "no engagement.yaml declared; running unscoped. Engagements are "
+            "opt-in for controlled campaigns — see CODE_OF_USE.md."
+        ),
+        operator=os.environ.get("USER", "unknown"),
+        acknowledged_at="",
+        targets=(),
+        bypassed=True,
+    )
+
+
+def _warn_no_engagement_once() -> None:
+    global _no_engagement_warned
+    if _no_engagement_warned:
+        return
+    _no_engagement_warned = True
+    logging.info(
+        "No engagement.yaml found — running unscoped (target enforcement and "
+        "audit trail off). This is the normal mode for ad-hoc sessions, CTF, "
+        "training, and lab work. Declare an engagement.yaml for a controlled, "
+        "scope-enforced, audit-logged campaign. The operator remains bound by "
+        "CODE_OF_USE.md regardless of mode."
     )
 
 
@@ -874,11 +947,15 @@ def get_active_scope() -> Optional[EngagementScope]:
 
 
 def assert_active_scope() -> EngagementScope:
-    """Load + validate the active scope, or refuse the engagement.
+    """Load + validate the active scope, defaulting to an unscoped session.
 
-    Honors the ``SCARLIGHT_NO_ENGAGEMENT=1`` bypass for internal use.
-    Otherwise raises :class:`EngagementScopeError` with an actionable
-    message if no valid scope is found.
+    Engagements are opt-in. Resolution order:
+      - ``SCARLIGHT_NO_ENGAGEMENT=1`` / ``--no-scope`` → explicit bypass scope.
+      - a valid engagement.yaml on a discovery path → that scope (enforced).
+      - a present-but-invalid engagement.yaml → raises
+        :class:`EngagementScopeError` (declaring scope wrong is a real error).
+      - no engagement.yaml anywhere → permissive no-engagement scope
+        (:func:`_no_engagement_scope`); the session runs unscoped.
 
     On success with a real scope, defaults the terminal backend to Docker
     (Kali) if the operator hasn't pinned one — see
@@ -900,7 +977,14 @@ def assert_active_scope() -> EngagementScope:
 
     scope = load_active_scope()
     if scope is None:
-        raise EngagementScopeError(_refusal_message())
+        # Engagements are opt-in. No engagement.yaml on any discovery path →
+        # run unscoped (permissive) rather than refusing to start. A present
+        # engagement.yaml that fails validation still raises inside
+        # load_active_scope(). See _no_engagement_scope().
+        _warn_no_engagement_once()
+        scope = _no_engagement_scope()
+        _active_scope = scope
+        return scope
     _enforce_sandboxed_terminal_default(scope)
     _persist_engagement_audit_trail(scope)
     _active_scope = scope

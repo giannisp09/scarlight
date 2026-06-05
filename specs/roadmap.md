@@ -31,7 +31,7 @@
 
 **Exit criteria:**
 - `scarlight` completes a simple engagement against an authorized lab/CTF target, start to finish.
-- The authorization guard blocks an engagement when no valid scope config is present.
+- The authorization guard enforces scope when an `engagement.yaml` is present, and refuses a *present-but-invalid* one. Engagements are **opt-in** (revised 2026-06-05): a session with no `engagement.yaml` runs unscoped rather than being blocked — forcing engagements on every session was rejected as UX friction. Operator responsibility under `CODE_OF_USE.md` is the load-bearing frame in every mode.
 - The self-improving loop demonstrably produced or refined at least one skill during the run.
 - `gateway/` is dormant — no engagement path invokes it, and its dependencies are excluded from the default install.
 

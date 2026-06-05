@@ -286,14 +286,13 @@ class TestValidation:
 
 
 class TestAssertActiveScope:
-    def test_raises_when_no_file(self, in_isolated_cwd):
-        with pytest.raises(EngagementScopeError) as exc_info:
-            assert_active_scope()
-        msg = str(exc_info.value)
-        assert "Refused to start engagement" in msg
-        assert "engagement.yaml.example" in msg
-        assert "CODE_OF_USE.md" in msg
-        assert "SCARLIGHT_NO_ENGAGEMENT" in msg
+    def test_no_file_returns_permissive_scope(self, in_isolated_cwd):
+        # Engagements are opt-in: no engagement.yaml anywhere → run unscoped
+        # (permissive), not refused. See _no_engagement_scope.
+        scope = assert_active_scope()
+        assert scope.bypassed is True
+        assert scope.engagement_id == "none:no-engagement"
+        assert scope.targets == ()
 
     def test_returns_scope_when_valid(self, in_isolated_cwd):
         _write(in_isolated_cwd / "engagement.yaml", _valid_scope_dict())
@@ -320,9 +319,14 @@ class TestAssertActiveScope:
     def test_bypass_env_var_falsy_values_do_not_bypass(
         self, in_isolated_cwd, monkeypatch, falsy
     ):
+        # A falsy SCARLIGHT_NO_ENGAGEMENT must NOT trigger the explicit bypass:
+        # with a valid engagement.yaml present, the real scope loads (enforced),
+        # not the bypass scope.
         monkeypatch.setenv("SCARLIGHT_NO_ENGAGEMENT", falsy)
-        with pytest.raises(EngagementScopeError):
-            assert_active_scope()
+        _write(in_isolated_cwd / "engagement.yaml", _valid_scope_dict())
+        scope = assert_active_scope()
+        assert scope.bypassed is False
+        assert scope.engagement_id == "test-engagement-001"
 
     def test_bypass_warning_logged_once_per_process(
         self, in_isolated_cwd, monkeypatch, caplog
@@ -667,6 +671,54 @@ class TestExtractNetworkTargets:
         )
         assert targets.count("example.com") == 1
 
+    def test_local_file_suffixes_not_extracted_as_hosts(self):
+        # The FQDN regex over-matches local filenames. The canonical
+        # audit_log helper writes exploitation.jsonl; skills emit xxe.xml
+        # and status.jsonl. None are network targets — if they leak into
+        # the extractor the per-tool gate refuses the command, which broke
+        # every exploitation skill's audit trail under a real engagement.
+        cmd = (
+            'jq -nc ... >> "$log_dir/exploitation.jsonl"; '
+            "cat xxe.xml; hashcat --status-json > status.jsonl"
+        )
+        targets = _extract_network_targets_from_command(cmd)
+        assert "exploitation.jsonl" not in targets
+        assert "xxe.xml" not in targets
+        assert "status.jsonl" not in targets
+
+    def test_audit_log_inspection_command_not_refused(self):
+        # Operator inspecting the trail must not be read as a domain hit.
+        targets = _extract_network_targets_from_command(
+            "cat ~/.scarlight/audit/exploitation.jsonl | tail -1 | jq"
+        )
+        assert "exploitation.jsonl" not in targets
+
+    def test_real_hosts_still_extracted_alongside_local_files(self):
+        # The exemption must not suppress genuine targets in the command.
+        targets = _extract_network_targets_from_command(
+            'sqlmap -u "http://dvwa.local/?id=1" --output-dir=out.txt && '
+            "nmap 10.0.0.5"
+        )
+        assert "dvwa.local" in targets
+        assert "http://dvwa.local/?id=1" in targets
+        assert "10.0.0.5" in targets
+        assert "out.txt" not in targets
+
+    def test_url_with_local_suffix_path_still_enforced(self):
+        # A real URL whose path ends in an exempt suffix is still caught by
+        # the URL regex — only the bare-FQDN branch is exempted.
+        targets = _extract_network_targets_from_command(
+            "curl https://acme.com/data.xml"
+        )
+        assert "https://acme.com/data.xml" in targets
+        assert "acme.com" in targets
+
+    def test_cctld_collision_suffix_not_exempted(self):
+        # Suffixes that ARE real TLDs (e.g. .sh) are deliberately NOT
+        # exempted, so a genuine *.sh target is never silently dropped.
+        targets = _extract_network_targets_from_command("nmap target.sh")
+        assert "target.sh" in targets
+
 
 # ── is_target_authorized (the core enforcement check) ──────────────────────
 
@@ -940,13 +992,13 @@ class TestNoScopeCLIFlag:
 
         assert "SCARLIGHT_NO_ENGAGEMENT" not in os.environ
 
-    def test_refusal_message_mentions_no_scope_flag(self, in_isolated_cwd):
-        # No scope on disk → assert_active_scope refuses. The refusal
-        # message must mention --no-scope so the operator knows about
-        # the legitimate opt-out path (CTF, training, personal lab).
-        with pytest.raises(EngagementScopeError) as exc:
-            assert_active_scope()
-        msg = str(exc.value)
+    def test_refusal_message_content(self, in_isolated_cwd):
+        # Engagements are opt-in, so assert_active_scope no longer refuses on a
+        # missing engagement.yaml. _refusal_message is retained as the canonical
+        # operator-facing guidance for setting up an engagement (e.g. a future
+        # `engagement init` / `--require-engagement` path); validate its content.
+        msg = engagement_scope._refusal_message()
+        assert "engagement.yaml.example" in msg
         assert "--no-scope" in msg
         assert "CTF" in msg or "training" in msg or "personal lab" in msg
         assert "CODE_OF_USE.md" in msg
