@@ -31,9 +31,9 @@ If the operator hasn't explicitly asked for a payload, do not produce one specul
 
 ## Hard prerequisite — authorization
 
-Refer to [`CODE_OF_USE.md`](../../CODE_OF_USE.md) — Scarlight is for authorized engagements only. The engagement-scope guard is a first measure, not a substitute for the operator's legal responsibility.
+Refer to [`CODE_OF_USE.md`](../../CODE_OF_USE.md) — Scarlight is for authorized engagements only. The engagement-scope guard is a first measure, not a substitute for the operator's legal responsibility. Engagements are **opt-in**: when an `engagement.yaml` is active its `targets:` list is enforced (and re-checked at skill entry as defense in depth); when **none** is declared the session runs **unscoped and permissive** — proceed with the task, do not demand a scope file or refuse for lack of one, and treat the operator as responsible under the policy above.
 
-- A real engagement (`engagement.yaml`) MUST be active. Refuse under `--no-scope` for any artifact intended for delivery against a non-self target.
+- **Heightened bar for delivery artifacts.** Crafting a weaponized payload or phishing infra *for delivery against a non-self target* requires a real, active `engagement.yaml` — refuse that specific request when unscoped (`--no-scope` or no engagement declared). This is an artifact-level gate, not a session gate: building payloads for your own lab / a CTF / self-targets is fine unscoped, and the rest of Scarlight stays opt-in as usual.
 - **`gophish` operations require `phishing_authorized: true` in `engagement.yaml`** — see [`engagement.yaml.example`](../../engagement.yaml.example). The skill body checks this flag and refuses gophish ops otherwise. The flag is the operator's signed assertion that phishing the listed targets has been signed off by the engagement's legal owner.
 - The output is written to `~/.scarlight/payloads/<engagement_id>/<timestamp>-<purpose>/` on the operator's host (NOT the sandbox; the operator needs to grab the file to deliver it). The body uses this path consistently so artifacts are discoverable for the operator's report.
 

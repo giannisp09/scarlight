@@ -30,7 +30,7 @@ If you do not have hash material *and* you do not have an authorization to hit a
 
 ## Hard prerequisite — authorization
 
-Refer to [`CODE_OF_USE.md`](../../CODE_OF_USE.md) — Scarlight is for authorized engagements only. The engagement-scope guard is a first measure, not a substitute for the operator's legal responsibility.
+Refer to [`CODE_OF_USE.md`](../../CODE_OF_USE.md) — Scarlight is for authorized engagements only. The engagement-scope guard is a first measure, not a substitute for the operator's legal responsibility. Engagements are **opt-in**: when an `engagement.yaml` is active its `targets:` list is enforced (and re-checked at skill entry as defense in depth); when **none** is declared the session runs **unscoped and permissive** — proceed with the task, do not demand a scope file or refuse for lack of one, and treat the operator as responsible under the policy above.
 
 - **Offline cracking** is host-local (runs against a hash on the operator's machine / inside the sandbox), but still writes an audit-log entry per invocation. The hash material itself was recovered under an engagement; the cracking is part of that engagement.
 - **Online bruteforce** requires the target host to appear in `engagement.yaml`'s `targets:` list. Re-check at skill entry — see [`CONVENTIONS.md`](../CONVENTIONS.md) §2. Refuse otherwise.

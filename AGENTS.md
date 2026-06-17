@@ -38,7 +38,7 @@ Supporting context:
 
 ## Current repository state
 
-**Phases 0 + 1 nearly complete — v1 is shippable.** The `hermes-agent` fork has landed, been rebranded, trimmed to the offensive surface, re-aimed at offensive-security work, and driven end-to-end against a deliberately-vulnerable lab. fork-runbook Steps 1–8 are done; Step 9 (verification gates) is being run before declaring v1.0.
+**Phases 0 + 1 complete; Phase 2 (v1.1 active exploitation) skills landed.** The `hermes-agent` fork has landed, been rebranded, trimmed to the offensive surface, re-aimed at offensive-security work, and driven end-to-end against a deliberately-vulnerable lab. fork-runbook Steps 1–9 are done. Per-target authorization enforcement and the v1.1 active-exploitation skill set (`web-exploit`, `password-attack`, `service-exploit`, `payload-craft`, `privesc-linux`, `privesc-windows`, `credential-harvest`, `lateral-movement`) plus the offensive `skills/offensive/CONVENTIONS.md` and the host-persisted `~/.scarlight/audit/exploitation.jsonl` audit trail are all committed. v1.1 acceptance (`specs/exploitation-v1/validation.md`) passes its static gates (scope-guard, documentation, regression); the infra-gated live kill-chain suite (§5) is the remaining step before tagging.
 
 The codebase is **hermes-agent's module layout, rebranded** — `agent/`, `providers/`, `plugins/`, `environments/`, `skills/`, `tools/`, `scarlight_cli/`, `gateway/`, `docker/`, and so on — *not* the 11-pillar package layout from `docs/`. See [`specs/tech-stack.md`](./specs/tech-stack.md) for each module's fate (keep / re-aim / dormant / remove). Layered on top is Scarlight's own product layer:
 
@@ -59,10 +59,10 @@ What's already landed (Phase 1, fork-runbook Steps 3–8):
 - **Step 4** — re-aimed `skills/` at offensive security (`recon`, `web-basic`); hermes-agent's 528 general-purpose SKILL.md files archived to `archived-skills/` with history preserved.
 - **Step 5** — re-aimed the terminal sandbox at Kali (`kalilinux/kali-last-release`, digest-pinned in `scarlight_constants.DEFAULT_TERMINAL_IMAGE`).
 - **Step 6** — smoke-tested the self-improving core end-to-end.
-- **Step 7** — `engagement.yaml` authorization-scope guard in `scarlight_cli/engagement_scope.py`; pre-flight check installed at `AIAgent.run_conversation()`; refuses every entry-point turn without a valid scope.
+- **Step 7** — `engagement.yaml` authorization-scope guard in `scarlight_cli/engagement_scope.py`; pre-flight check installed at `AIAgent.run_conversation()`. **Engagements are opt-in** (commit `3139a9c`): with no `engagement.yaml` the session runs unscoped and permissive (CTF / lab / ad-hoc); a *present* engagement.yaml enforces its `targets:` per-tool, and a present-but-invalid one still refuses loudly. The operator is bound by `CODE_OF_USE.md` in either mode.
 - **Step 8** — drove a full engagement end-to-end against OWASP Juice Shop in Docker (recon → 6 findings → autonomously refined `juice-shop-fingerprint` skill). Same commit landed a Step-5 follow-up that defaults `TERMINAL_ENV=docker` when a real engagement is active, so offensive commands actually run inside the Kali sandbox by default.
 
-**Next:** Step 9 verification gates → v1.0 ship → per-target authorization enforcement (turn the `targets:` list from documentation into enforcement) → active exploitation skills.
+**Next:** run the infra-gated v1.1 validation (live per-skill smoke + the §5 HTB kill-chain on 3 Starting Point boxes) → tag v1.0 / v1.1 and merge to `main` → follow-up specs (engine-side `risk_level` enforcement, `--no-scope` routable-IP heuristic, the `permitted_risk_level` parser).
 
 ---
 

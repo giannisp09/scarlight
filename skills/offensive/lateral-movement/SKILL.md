@@ -36,7 +36,7 @@ If credentials match a service on a host outside scope, **stop** and surface the
 
 ## Hard prerequisite — authorization
 
-Refer to [`CODE_OF_USE.md`](../../CODE_OF_USE.md) — Scarlight is for authorized engagements only. The engagement-scope guard is a first measure, not a substitute for the operator's legal responsibility.
+Refer to [`CODE_OF_USE.md`](../../CODE_OF_USE.md) — Scarlight is for authorized engagements only. The engagement-scope guard is a first measure, not a substitute for the operator's legal responsibility. Engagements are **opt-in**: when an `engagement.yaml` is active its `targets:` list is enforced (and re-checked at skill entry as defense in depth); when **none** is declared the session runs **unscoped and permissive** — proceed with the task, do not demand a scope file or refuse for lack of one, and treat the operator as responsible under the policy above.
 
 - `$PIVOT_HOST` MUST appear in `engagement.yaml`'s `targets:` list. Re-check at skill entry (defense in depth — see [`CONVENTIONS.md`](../CONVENTIONS.md) §2). The per-tool gate inspects the immediate shell command (`ssh user@host`, `netexec smb host -u ... -p ...`), but a target supplied via a `-targets-file` or env-var substitution can slip past — the skill body re-validates.
 - **Per-host operator authorization is the unit.** Authorization to pivot from A to B does not authorize A to C, and does not authorize B to its own neighbors. Recursive auto-pivot is refused (§7).

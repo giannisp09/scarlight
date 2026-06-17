@@ -27,7 +27,7 @@ Map the visible structure and configuration of a web application that is in the 
 
 ## Hard prerequisite — authorization
 
-The target URL must be in the active engagement scope. Until the scope guard lands (fork-runbook Step 7), confirm by reading the engagement scope file and checking the host is listed. Refuse if no scope file is loaded. Active web probing is **not** safe by default — gobuster and intrusive header tests can be read as attack traffic.
+Refer to [`CODE_OF_USE.md`](../../CODE_OF_USE.md) — Scarlight is for authorized engagements only. Engagements are **opt-in**: when an `engagement.yaml` is active the target URL must be in its scope — the per-tool gate (`scarlight_cli/engagement_scope.py`) refuses out-of-scope dispatch, and you should confirm the host is listed in `targets:` before probing. When **no** `engagement.yaml` is declared the session is unscoped — probe the operator's stated target without demanding a scope file. Either way, active web probing is **not** safe by default — gobuster and intrusive header tests can be read as attack traffic, so stay within what the operator authorized.
 
 ## Procedure
 

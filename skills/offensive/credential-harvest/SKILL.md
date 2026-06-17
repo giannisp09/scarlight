@@ -34,7 +34,7 @@ If the operator just wants a quick "what creds are on this host?" without a clea
 
 ## Hard prerequisite — authorization
 
-Refer to [`CODE_OF_USE.md`](../../CODE_OF_USE.md) — Scarlight is for authorized engagements only. The engagement-scope guard is a first measure, not a substitute for the operator's legal responsibility.
+Refer to [`CODE_OF_USE.md`](../../CODE_OF_USE.md) — Scarlight is for authorized engagements only. The engagement-scope guard is a first measure, not a substitute for the operator's legal responsibility. Engagements are **opt-in**: when an `engagement.yaml` is active its `targets:` list is enforced (and re-checked at skill entry as defense in depth); when **none** is declared the session runs **unscoped and permissive** — proceed with the task, do not demand a scope file or refuse for lack of one, and treat the operator as responsible under the policy above.
 
 - Target host MUST be in `engagement.yaml`'s `targets:` list. Re-check at skill entry ([`CONVENTIONS.md`](../CONVENTIONS.md) §2). A compromise won via [`service-exploit`](../service-exploit/SKILL.md) does not extend scope.
 - **Cross-user extraction** — extracting credentials belonging to a user other than the one whose shell the agent operates in (e.g. SYSTEM-privileged agent dumping a specific user's Chrome store) requires explicit operator confirmation. The skill body refuses by default. The reason: a SOW that authorizes pentesting "the web server" doesn't automatically authorize pulling the CEO's password vault, even though the technical access permits it.

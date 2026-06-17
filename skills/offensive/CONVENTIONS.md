@@ -31,9 +31,12 @@ When in doubt, escalate one level: a borderline `active`/`destructive` skill sho
 
 ## 2. Authorization re-validation
 
-Every skill in this folder runs with the engagement-scope guard already in place (`scarlight_cli/engagement_scope.py::assert_active_scope()`) and per-target enforcement at the terminal / web / browser tools (`check_command_authorized`, `is_target_authorized`, `check_url_authorized`). Skills MUST still re-check at the body's first step. **Defense in depth.**
+Engagements are **opt-in** (`scarlight_cli/engagement_scope.py::assert_active_scope()`). Two modes:
 
-Reasons:
+- **An `engagement.yaml` is active** → per-target enforcement is live at the terminal / web / browser tools (`check_command_authorized`, `is_target_authorized`, `check_url_authorized`), and skills MUST still re-check the target against scope at the body's first step. **Defense in depth.**
+- **No `engagement.yaml` declared** (the normal case for CTF, training, lab, and ad-hoc sessions) → the session runs **unscoped and permissive**; the guard does not refuse and there is no `targets:` list to validate against. Skills proceed against the operator's stated target — they do **not** demand a scope file or refuse for lack of one. The operator remains bound by `CODE_OF_USE.md` (§8).
+
+When a scope *is* present, the re-check still matters because:
 
 - Terminal-gate sees the immediate shell command, not URLs embedded deep in a payload, an MSF rc-file, or a tool's config file.
 - A weak model may craft a target string the gate can't pattern-match (concatenation, env-var substitution, path traversal in a URL).

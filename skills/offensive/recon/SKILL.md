@@ -29,13 +29,11 @@ This skill is **passive-to-light-active only**. No DoS, no credential brute-forc
 
 ## Hard prerequisite — authorization
 
-Before any command in this skill runs, the agent **must** confirm the target is in the active engagement scope. Until the engagement-scope guard lands (fork-runbook Step 7), confirm by:
+Refer to [`CODE_OF_USE.md`](../../CODE_OF_USE.md) — Scarlight is for authorized engagements only. The engagement-scope guard is a first measure, not a substitute for the operator's legal responsibility. Engagements are **opt-in**: when an `engagement.yaml` is active its `targets:` list is enforced (and re-checked at skill entry as defense in depth); when **none** is declared the session runs **unscoped and permissive** — proceed with the task, do not demand a scope file or refuse for lack of one, and treat the operator as responsible under the policy above.
 
-1. Reading the user-supplied scope file (`engagement.toml` / equivalent) into context.
-2. Checking the target hostname or CIDR is explicitly listed.
-3. Refusing to proceed if no scope file is loaded.
+When an `engagement.yaml` **is** active, the per-tool gate (`scarlight_cli/engagement_scope.py`) refuses out-of-scope dispatch on every turn; re-check the target host or CIDR appears in its `targets:` list before scanning (defense in depth). When **no** `engagement.yaml` is declared — the normal case for ad-hoc, CTF, and lab work — the session is unscoped and there is nothing to refuse against: go ahead and scan the operator's stated target. Do **not** block on, or demand, a scope file. (`--no-scope` makes the unscoped mode explicit.)
 
-Out-of-scope recon is a contract violation regardless of how non-destructive the commands are.
+Out-of-scope recon *against a declared engagement* is a contract violation regardless of how non-destructive the commands are.
 
 ## Procedure
 
@@ -99,4 +97,4 @@ Persist (via the agent's memory layer) one record per engagement target:
 - Brute-force / credential spraying — out of scope, separate skill.
 - Vulnerability *exploitation* — recon stops at fingerprinting.
 - Destructive nmap scripts (`--script vuln`, `--script intrusive`, `--script dos`) — never from this skill.
-- Targets not in the active engagement scope — refuse, don't run.
+- Targets outside an **active** engagement's scope — refuse, don't run. (With no engagement declared there is no scope to violate; scan the operator's stated target.)
