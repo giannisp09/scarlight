@@ -77,3 +77,12 @@ mini-swe-agent/
 result
 website/static/api/skills-index.json
 models-dev-upstream/
+
+# Operator-console integration bridges — console (private/paid) code that the
+# console's Rust host runs from $SCARLIGHT_ROOT at runtime. Canonical copies live
+# in the scarlight-console repo (bridges/). Must NOT enter OSS public history.
+query_bridge.py
+recon_bridge.py
+
+# semideus-cognition local agent worktrees / scratch — never committed.
+.semideus/
