@@ -2166,6 +2166,17 @@ def browser_navigate(url: str, task_id: Optional[str] = None) -> str:
                      "Secrets must not be sent in URLs.",
         })
 
+    # Engagement-scope enforcement: the target must be in the operator's
+    # authorized targets list. No-op when no active scope or when bypass
+    # is set; see scarlight_cli/engagement_scope.py.
+    try:
+        from scarlight_cli.engagement_scope import check_url_authorized
+        scope_refusal = check_url_authorized(url)
+    except Exception:  # noqa: BLE001 — never let scope-check failure hide the nav
+        scope_refusal = None
+    if scope_refusal:
+        return json.dumps({"success": False, "error": scope_refusal})
+
     # SSRF protection — block private/internal addresses before navigating.
     # Skipped for local backends (Camofox, headless Chromium without a cloud
     # provider) because the agent already has full local network access via

@@ -47,6 +47,8 @@ import subprocess
 from pathlib import Path
 from typing import Optional, Dict, Any, List
 
+from scarlight_constants import DEFAULT_TERMINAL_IMAGE
+
 logger = logging.getLogger(__name__)
 
 
@@ -1006,8 +1008,7 @@ def _parse_env_var(name: str, default: str, converter=int, type_label: str = "in
 
 def _get_env_config() -> Dict[str, Any]:
     """Get terminal environment configuration from environment variables."""
-    # Default image with Python and Node.js for maximum compatibility
-    default_image = "nikolaik/python-nodejs:python3.11-nodejs20"
+    default_image = DEFAULT_TERMINAL_IMAGE
     env_type = os.getenv("TERMINAL_ENV", "local")
     
     mount_docker_cwd = os.getenv("TERMINAL_DOCKER_MOUNT_CWD_TO_WORKSPACE", "false").lower() in {"true", "1", "yes"}
@@ -1684,6 +1685,24 @@ def terminal_tool(
                 "status": "error",
             }, ensure_ascii=False)
 
+        # Engagement-scope enforcement: refuse the command if it would
+        # reach an out-of-scope host. Returns None when there is no
+        # active scope (called outside an engagement) or the scope is
+        # bypassed (test harness / SCARLIGHT_NO_ENGAGEMENT=1) — see
+        # scarlight_cli/engagement_scope.py.
+        try:
+            from scarlight_cli.engagement_scope import check_command_authorized
+            refusal = check_command_authorized(command)
+        except Exception:  # noqa: BLE001 — never let scope-check failure hide the command
+            refusal = None
+        if refusal:
+            return json.dumps({
+                "output": "",
+                "exit_code": -1,
+                "error": refusal,
+                "status": "refused_scope",
+            }, ensure_ascii=False)
+
         # Get configuration
         config = _get_env_config()
         env_type = config["env_type"]
@@ -2258,7 +2277,7 @@ if __name__ == "__main__":
     print("  result = terminal_tool(command='python server.py', background=True)")
 
     print("\nEnvironment Variables:")
-    default_img = "nikolaik/python-nodejs:python3.11-nodejs20"
+    default_img = DEFAULT_TERMINAL_IMAGE
     print(
         "  TERMINAL_ENV: "
         f"{os.getenv('TERMINAL_ENV', 'local')} "

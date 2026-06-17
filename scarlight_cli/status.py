@@ -19,7 +19,7 @@ from scarlight_cli.models import provider_label
 from scarlight_cli.nous_subscription import get_nous_subscription_features
 from scarlight_cli.runtime_provider import resolve_requested_provider
 from scarlight_cli.vercel_auth import describe_vercel_auth
-from scarlight_constants import OPENROUTER_MODELS_URL
+from scarlight_constants import OPENROUTER_MODELS_URL, DEFAULT_TERMINAL_IMAGE
 from tools.tool_backend_helpers import managed_nous_tools_enabled
 
 def check_mark(ok: bool) -> str:
@@ -356,10 +356,10 @@ def show_status(args):
         print(f"  SSH Host:     {ssh_host or '(not set)'}")
         print(f"  SSH User:     {ssh_user or '(not set)'}")
     elif terminal_env == "docker":
-        docker_image = os.getenv("TERMINAL_DOCKER_IMAGE", "python:3.11-slim")
+        docker_image = os.getenv("TERMINAL_DOCKER_IMAGE", DEFAULT_TERMINAL_IMAGE)
         print(f"  Docker Image: {docker_image}")
     elif terminal_env == "daytona":
-        daytona_image = os.getenv("TERMINAL_DAYTONA_IMAGE", "nikolaik/python-nodejs:python3.11-nodejs20")
+        daytona_image = os.getenv("TERMINAL_DAYTONA_IMAGE", DEFAULT_TERMINAL_IMAGE)
         print(f"  Daytona Image: {daytona_image}")
     elif terminal_env == "vercel_sandbox":
         runtime = os.getenv("TERMINAL_VERCEL_RUNTIME") or terminal_cfg.get("vercel_runtime") or "node24"

@@ -25,7 +25,7 @@ from typing import Optional, Dict, Any
 from scarlight_cli.nous_subscription import get_nous_subscription_features
 from tools.tool_backend_helpers import managed_nous_tools_enabled
 from utils import base_url_hostname
-from scarlight_constants import get_optional_skills_dir
+from scarlight_constants import get_optional_skills_dir, DEFAULT_TERMINAL_IMAGE
 
 logger = logging.getLogger(__name__)
 
@@ -1395,7 +1395,7 @@ def setup_terminal_backend(config: dict):
             print_info(f"Docker found: {docker_bin}")
 
         # Docker image
-        current_image = cfg_get(config, "terminal", "docker_image", default="nikolaik/python-nodejs:python3.11-nodejs20")
+        current_image = cfg_get(config, "terminal", "docker_image", default=DEFAULT_TERMINAL_IMAGE)
         image = prompt("  Docker image", current_image)
         config["terminal"]["docker_image"] = image
         save_env_value("TERMINAL_DOCKER_IMAGE", image)
@@ -1415,7 +1415,7 @@ def setup_terminal_backend(config: dict):
         else:
             print_info(f"Found: {sing_bin}")
 
-        current_image = cfg_get(config, "terminal", "singularity_image", default="docker://nikolaik/python-nodejs:python3.11-nodejs20")
+        current_image = cfg_get(config, "terminal", "singularity_image", default=f"docker://{DEFAULT_TERMINAL_IMAGE}")
         image = prompt("  Container image", current_image)
         config["terminal"]["singularity_image"] = image
         save_env_value("TERMINAL_SINGULARITY_IMAGE", image)
@@ -1571,7 +1571,7 @@ def setup_terminal_backend(config: dict):
                 print_success("    Configured")
 
         # Daytona image
-        current_image = cfg_get(config, "terminal", "daytona_image", default="nikolaik/python-nodejs:python3.11-nodejs20")
+        current_image = cfg_get(config, "terminal", "daytona_image", default=DEFAULT_TERMINAL_IMAGE)
         image = prompt("  Sandbox image", current_image)
         config["terminal"]["daytona_image"] = image
         save_env_value("TERMINAL_DAYTONA_IMAGE", image)

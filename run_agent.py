@@ -11820,6 +11820,15 @@ class AIAgent:
         # Installed once, transparent when streams are healthy, prevents crash on write.
         _install_safe_stdio()
 
+        # Pre-flight: resolve the active engagement scope. Engagements are
+        # OPT-IN — a plain session with no engagement.yaml runs unscoped
+        # (permissive). A *present-but-invalid* engagement.yaml still refuses;
+        # SCARLIGHT_NO_ENGAGEMENT=1 forces the explicit bypass. Scarlight is an
+        # offensive-security tool — the operator is bound by CODE_OF_USE.md in
+        # every mode. See scarlight_cli/engagement_scope.py::assert_active_scope.
+        from scarlight_cli.engagement_scope import assert_active_scope
+        self._engagement_scope = assert_active_scope()
+
         self._ensure_db_session()
 
         # Tell auxiliary_client what the live main provider/model are for

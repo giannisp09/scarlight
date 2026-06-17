@@ -291,7 +291,7 @@ def get_container_exec_info() -> Optional[dict]:
 # =============================================================================
 
 # Re-export from scarlight_constants — canonical definition lives there.
-from scarlight_constants import get_scarlight_home  # noqa: F811,E402
+from scarlight_constants import get_scarlight_home, DEFAULT_TERMINAL_IMAGE  # noqa: F811,E402
 from utils import atomic_replace
 
 def get_config_path() -> Path:
@@ -557,7 +557,7 @@ DEFAULT_CONFIG = {
         # this off if your rc files misbehave when sourced
         # non-interactively (e.g. one that hard-exits on TTY checks).
         "auto_source_bashrc": True,
-        "docker_image": "nikolaik/python-nodejs:python3.11-nodejs20",
+        "docker_image": DEFAULT_TERMINAL_IMAGE,
         "docker_forward_env": [],
         # Explicit environment variables to set inside Docker containers.
         # Unlike docker_forward_env (which reads values from the host process),
@@ -565,9 +565,9 @@ DEFAULT_CONFIG = {
         # runs as a systemd service without access to the user's shell environment.
         # Example: {"SSH_AUTH_SOCK": "/run/user/1000/ssh-agent.sock"}
         "docker_env": {},
-        "singularity_image": "docker://nikolaik/python-nodejs:python3.11-nodejs20",
-        "modal_image": "nikolaik/python-nodejs:python3.11-nodejs20",
-        "daytona_image": "nikolaik/python-nodejs:python3.11-nodejs20",
+        "singularity_image": f"docker://{DEFAULT_TERMINAL_IMAGE}",
+        "modal_image": DEFAULT_TERMINAL_IMAGE,
+        "daytona_image": DEFAULT_TERMINAL_IMAGE,
         "vercel_runtime": "node24",
         # Container resource limits (docker, singularity, modal, daytona, vercel_sandbox — ignored for local/ssh)
         "container_cpu": 1,
@@ -4829,15 +4829,15 @@ def show_config():
     print(f"  Timeout:      {terminal.get('timeout', 60)}s")
     
     if terminal.get('backend') == 'docker':
-        print(f"  Docker image: {terminal.get('docker_image', 'nikolaik/python-nodejs:python3.11-nodejs20')}")
+        print(f"  Docker image: {terminal.get('docker_image', DEFAULT_TERMINAL_IMAGE)}")
     elif terminal.get('backend') == 'singularity':
-        print(f"  Image:        {terminal.get('singularity_image', 'docker://nikolaik/python-nodejs:python3.11-nodejs20')}")
+        print(f"  Image:        {terminal.get('singularity_image', f'docker://{DEFAULT_TERMINAL_IMAGE}')}")
     elif terminal.get('backend') == 'modal':
-        print(f"  Modal image:  {terminal.get('modal_image', 'nikolaik/python-nodejs:python3.11-nodejs20')}")
+        print(f"  Modal image:  {terminal.get('modal_image', DEFAULT_TERMINAL_IMAGE)}")
         modal_token = get_env_value('MODAL_TOKEN_ID')
         print(f"  Modal token:  {'configured' if modal_token else '(not set)'}")
     elif terminal.get('backend') == 'daytona':
-        print(f"  Daytona image: {terminal.get('daytona_image', 'nikolaik/python-nodejs:python3.11-nodejs20')}")
+        print(f"  Daytona image: {terminal.get('daytona_image', DEFAULT_TERMINAL_IMAGE)}")
         daytona_key = get_env_value('DAYTONA_API_KEY')
         print(f"  API key:      {'configured' if daytona_key else '(not set)'}")
     elif terminal.get('backend') == 'vercel_sandbox':

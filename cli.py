@@ -102,7 +102,11 @@ _COMMAND_SPINNER_FRAMES = ("⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧
 
 # Load .env from ~/.scarlight/.env first, then project root as dev fallback.
 # User-managed env files should override stale shell exports on restart.
-from scarlight_constants import get_scarlight_home, display_scarlight_home
+from scarlight_constants import (
+    get_scarlight_home,
+    display_scarlight_home,
+    DEFAULT_TERMINAL_IMAGE,
+)
 from scarlight_cli.browser_connect import (
     DEFAULT_BROWSER_CDP_URL,
     manual_chrome_debug_command,
@@ -311,11 +315,11 @@ def load_cli_config() -> Dict[str, Any]:
             "cwd": ".",  # "." is resolved to os.getcwd() at runtime
             "timeout": 60,
             "lifetime_seconds": 300,
-            "docker_image": "nikolaik/python-nodejs:python3.11-nodejs20",
+            "docker_image": DEFAULT_TERMINAL_IMAGE,
             "docker_forward_env": [],
-            "singularity_image": "docker://nikolaik/python-nodejs:python3.11-nodejs20",
-            "modal_image": "nikolaik/python-nodejs:python3.11-nodejs20",
-            "daytona_image": "nikolaik/python-nodejs:python3.11-nodejs20",
+            "singularity_image": f"docker://{DEFAULT_TERMINAL_IMAGE}",
+            "modal_image": DEFAULT_TERMINAL_IMAGE,
+            "daytona_image": DEFAULT_TERMINAL_IMAGE,
             "docker_volumes": [],  # host:container volume mounts for Docker backend
             "docker_mount_cwd_to_workspace": False,  # explicit opt-in only; default off for sandbox isolation
         },
@@ -2130,8 +2134,8 @@ def _build_compact_banner() -> str:
     dim_color = _skin.get_color("banner_dim", "#B8860B") if _skin else "#B8860B"
 
     if skin_name == "default":
-        line1 = "⚕ NOUS HERMES - AI Agent Framework"
-        tiny_line = "⚕ NOUS HERMES"
+        line1 = "⚕ SCARLIGHT · Cyber Superintelligence"
+        tiny_line = "⚕ SCARLIGHT"
     else:
         agent_name = _skin.get_branding("agent_name", "Scarlight Agent") if _skin else "Scarlight Agent"
         line1 = f"{agent_name} - AI Agent Framework"

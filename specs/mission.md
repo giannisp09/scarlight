@@ -42,6 +42,10 @@ A deliberately lean adaptation of hermes-agent:
 
 That is the whole of v1.
 
+## What v1.1 adds — active exploitation
+
+v1.1 closes the gap between Scarlight's recon-only v1 and a full kill-chain agent. It adds active-exploitation skills (`web-exploit`, `password-attack`, `service-exploit`, `payload-craft`), post-exploitation skills (`privesc-linux`, `privesc-windows`, `credential-harvest`), and a connect-and-confirm `lateral-movement` skill, so Scarlight can complete a full multi-host CTF or pentest engagement — recon → exploitation → post-exploitation → authorized pivot → flag / loot — under authorization. v1.1 introduces a `risk_level` frontmatter convention (`passive | active | destructive`) on all skills as a documentation layer; programmatic enforcement is a follow-up. Every exploitation invocation writes an audit-log entry to `~/.scarlight/audit/exploitation.jsonl`. Operator responsibility under [`CODE_OF_USE.md`](../CODE_OF_USE.md) remains the load-bearing legal frame. AD attacks, password spraying, NTLM relay, wireless, cloud, mobile, and container surfaces are tiered deferrals (see [`exploitation-v1/requirements.md`](./exploitation-v1/requirements.md) §7).
+
 ## What v1 is NOT
 
 Explicitly out of scope for v1, deferred and unplanned:

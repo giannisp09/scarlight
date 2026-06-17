@@ -181,16 +181,29 @@ terminal:
 #   ssh_key: "~/.ssh/id_rsa"  # Optional - uses ssh-agent if not specified
 
 # -----------------------------------------------------------------------------
-# OPTION 3: Docker container
-# Commands run in an isolated Docker container
-# Great for: reproducible environments, testing, isolation
+# OPTION 3: Docker container  (recommended for offensive engagements)
+# Commands run in an isolated Docker container.
+#
+# Default image: kalilinux/kali-last-release pinned by manifest-list digest
+# (see scarlight_constants.DEFAULT_TERMINAL_IMAGE).  ~120MB minimal — install
+# offensive tools at first use:
+#
+#     apt update && apt install -y nmap gobuster sqlmap nikto curl jq
+#
+# The bundled offensive skills (skills/offensive/recon, web-basic) declare
+# their tool prerequisites in the SKILL.md frontmatter; the agent installs
+# what's missing on demand.
 # -----------------------------------------------------------------------------
 # terminal:
 #   backend: "docker"
 #   cwd: "/workspace"  # Path INSIDE the container (default: /)
 #   timeout: 180
 #   lifetime_seconds: 300
-#   docker_image: "nikolaik/python-nodejs:python3.11-nodejs20"
+#   # Pinned by manifest-list digest for reproducibility.  To override with a
+#   # different image, do the same: `docker buildx imagetools inspect <ref>`
+#   # and use the `Digest:` value, NOT a per-arch digest from
+#   # `docker manifest inspect`.
+#   docker_image: "kalilinux/kali-last-release@sha256:59a4bea68a92b8e2f7b2490345a49784eb11264ceb7deece037e543b2a7dfd73"
 #   docker_mount_cwd_to_workspace: true   # Explicit opt-in: mount your launch cwd into /workspace
 #   # Optional: run the container as your host user's uid:gid so files written
 #   # into bind-mounted dirs are owned by you, not root. Drops SETUID/SETGID
@@ -220,7 +233,7 @@ terminal:
 #   cwd: "/workspace"  # Path INSIDE the container (default: /root)
 #   timeout: 180
 #   lifetime_seconds: 300
-#   singularity_image: "docker://nikolaik/python-nodejs:python3.11-nodejs20"
+#   singularity_image: "docker://kalilinux/kali-last-release@sha256:59a4bea68a92b8e2f7b2490345a49784eb11264ceb7deece037e543b2a7dfd73"
 
 # -----------------------------------------------------------------------------
 # OPTION 5: Modal cloud execution
@@ -232,7 +245,7 @@ terminal:
 #   cwd: "/workspace"  # Path INSIDE the sandbox (default: /root)
 #   timeout: 180
 #   lifetime_seconds: 300
-#   modal_image: "nikolaik/python-nodejs:python3.11-nodejs20"
+#   modal_image: "kalilinux/kali-last-release@sha256:59a4bea68a92b8e2f7b2490345a49784eb11264ceb7deece037e543b2a7dfd73"
 
 # -----------------------------------------------------------------------------
 # OPTION 6: Daytona cloud execution
@@ -245,7 +258,7 @@ terminal:
 #   cwd: "~"
 #   timeout: 180
 #   lifetime_seconds: 300
-#   daytona_image: "nikolaik/python-nodejs:python3.11-nodejs20"
+#   daytona_image: "kalilinux/kali-last-release@sha256:59a4bea68a92b8e2f7b2490345a49784eb11264ceb7deece037e543b2a7dfd73"
 #   container_disk: 10240          # Daytona max is 10GB per sandbox
 
 #

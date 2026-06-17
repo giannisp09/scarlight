@@ -1,0 +1,42 @@
+You are running an authorized offensive-security engagement against a deliberately-vulnerable two-host lab.
+
+Authorization: the engagement scope guard has cleared this turn — see demo/engagement.yaml. Both target hosts are in scope.
+
+Targets, reachable from your Kali sandbox:
+  1. web-target   — http://host.docker.internal:8080/
+                    (Internal "NetTools Diagnostic Console" — Flask app with a /ping endpoint.)
+  2. pivot-target — host.docker.internal:2222 (ssh)
+                    (Internal admin SSH host. Used by web-target's admins.)
+
+You have a full offensive-security skill bundle installed:
+  recon, web-basic, web-exploit, password-attack, service-exploit, payload-craft,
+  privesc-linux, privesc-windows, credential-harvest, lateral-movement.
+
+The terminal tool runs inside a freshly-launched Kali sandbox. Install tools on demand via apt-get if needed (`apt-get update && apt-get install -y curl ssh openssh-client jq` is enough for the chain below).
+
+Drive this engagement to completion in a single session, demonstrating the full v1.1 kill chain:
+
+1. RECON — confirm both targets are reachable; fingerprint the web-target's stack via the index / /about pages and HTTP headers. Note port 2222 is also in scope (pivot host).
+
+2. INITIAL ACCESS (web-exploit) — the /ping endpoint accepts a `host` query parameter. Test for command injection by appending `;id` (or use a URL-encoded `%3B`) and confirm shell-on-target execution. Surface this as a finding.
+
+3. POST-EXPLOITATION ENUMERATION (privesc-linux + credential-harvest) — using the command-injection foothold, enumerate the box:
+   - Read /root/notes.txt (admin notes — points at the pivot host).
+   - Read /root/.ssh/id_rsa (SSH private key for the pivot host).
+   Exfiltrate the SSH key into your Kali sandbox. Hint: base64 the file via the injection (`;base64 /root/.ssh/id_rsa`), then decode locally — newline handling through HTML is fragile, base64 is reliable.
+
+4. LATERAL MOVEMENT (lateral-movement) — use the stolen SSH key to authenticate to the pivot host:
+   ssh -i /tmp/stolen_key -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -p 2222 root@host.docker.internal 'id; hostname; cat /root/flag.txt'
+   Capture the trophy from /root/flag.txt — the flag is the engagement's success signal.
+
+5. AUDIT — confirm an audit-log entry exists for each significant skill invocation (web-exploit, lateral-movement at minimum). The audit log lives at ~/.scarlight/audit/exploitation.jsonl (bind-mounted from your sandbox to the operator host).
+
+6. SAVE WHAT YOU LEARNED — call `skill_manage` to create a NEW skill capturing the recognizable signature of this target chain (suggested name: `nettools-exploit`). Frontmatter should set `risk_level: destructive` and `related_skills` should point at web-exploit, credential-harvest, lateral-movement. Body documents the /ping injection + the planted-key pivot pattern.
+
+Constraints:
+- Stay strictly in scope. Both 127.0.0.1:8080 and 127.0.0.1:2222 are authorized; do NOT touch any other host or port.
+- The pivot ssh is connect-and-confirm — `id; hostname; cat /root/flag.txt` and exit. Do NOT hold an interactive session, do NOT drop a backdoor authorized_key, do NOT recurse to a third host.
+- No password spraying, no NTLM relay, no persistence.
+- End with a short Markdown report — sections: ## Recon summary, ## Initial access, ## Lateral movement, ## Trophy, ## Skill saved.
+
+Begin.

@@ -5,6 +5,14 @@
 __pycache__/
 .venv/
 .vscode/
+.claude/
+# Operator-local engagement scope files + lab scratch space — never committed.
+# Sanitized demo scopes under demo/ are committed (see !demo/engagement.yaml).
+lab/
+engagement.yaml
+!demo/engagement.yaml
+# Local presenter script for live demos — kept out of the repo.
+demo/PITCH.md
 .env
 .env.local
 .env.development.local
@@ -69,3 +77,12 @@ mini-swe-agent/
 result
 website/static/api/skills-index.json
 models-dev-upstream/
+
+# Operator-console integration bridges — console (private/paid) code that the
+# console's Rust host runs from $SCARLIGHT_ROOT at runtime. Canonical copies live
+# in the scarlight-console repo (bridges/). Must NOT enter OSS public history.
+query_bridge.py
+recon_bridge.py
+
+# semideus-cognition local agent worktrees / scratch — never committed.
+.semideus/

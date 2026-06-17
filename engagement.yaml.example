@@ -1,0 +1,77 @@
+# Scarlight engagement scope — authorization configuration.
+#
+# This file is for PRODUCTION-GRADE authorized engagements: pentests,
+# bug bounty work, contracted red-team operations, lab work with a
+# named authorization owner. Copy this file to one of:
+#   1. ~/.scarlight/engagement.yaml         (default for single-engagement use)
+#   2. ./engagement.yaml                    (per-working-dir engagement)
+#   3. Anywhere; point SCARLIGHT_ENGAGEMENT=/abs/path at it
+#
+# Scarlight refuses to start a turn without a valid scope on file, and
+# the listed targets are enforced at every tool call (terminal, web,
+# browser). See CODE_OF_USE.md for the operator policy this file
+# binds you to.
+#
+# For CTF, training, personal lab, or skill-development work — where a
+# declared scope isn't applicable — run with `--no-scope` (or set
+# SCARLIGHT_NO_ENGAGEMENT=1). That's the supported opt-out. The test
+# suite and internal harnesses use the same path. The operator remains
+# bound by CODE_OF_USE.md regardless of mode.
+
+# Unique identifier for the engagement. Use whatever convention is
+# meaningful to you (project code, contract reference, CTF event slug).
+engagement_id: "example-pentest-2026-q2"
+
+# Human-readable authorization reference. The point of this field is
+# auditability: a reviewer reading this file should be able to trace
+# the operator's authority back to a concrete document or program.
+authorization_reference: >
+  Master Services Agreement 2026-04 with Acme Corp,
+  Statement of Work dated 2026-05-01 (Appendix B: external web-app pentest),
+  point of contact: security@acme.example
+
+# Operator acknowledgment of CODE_OF_USE.md. acknowledged MUST be the
+# literal YAML boolean `true`. The operator and date fields are required
+# so the file documents who is accountable for this engagement and when
+# they took it on. code_of_use_version is optional but recommended.
+operator_acknowledgment:
+  acknowledged: true
+  operator: "Operator Name <operator@example.com>"
+  date: "2026-05-18"
+  code_of_use_version: "1"
+
+# Authorized targets — hostnames, IPs, CIDR ranges, or URLs you have
+# permission to test. The list MUST be non-empty. Be specific.
+#
+# These are ENFORCED per tool call: the terminal, web, and browser tools
+# each consult this list and refuse any dispatch that would touch a host
+# not listed below. Matching rules:
+#   - Hostnames are exact and case-insensitive: "acme.com" matches
+#     "https://acme.com/foo" and "acme.com:443"; it does NOT match
+#     "evil-acme.com" or "api.acme.com" (no substring, no wildcard).
+#     List subdomains explicitly.
+#   - IPs use exact match or CIDR (e.g. "10.10.10.0/24" matches
+#     10.10.10.1 through 10.10.10.254, including http://10.10.10.42:80/).
+#   - Port-agnostic at the host level: "acme.com:443" in scope matches
+#     "acme.com:80" too. Port-level restriction is a planned follow-up.
+#   - CIDR rules match only IP literals, not hostnames (no DNS at this
+#     layer — list the resolved IPs/CIDR you authorize).
+targets:
+  - "acme-webapp.example.com"
+  - "api.acme-webapp.example.com"
+  - "10.10.10.0/24"
+
+# Optional engagement window. If start is set and in the future, or end
+# is set and in the past, the guard refuses to start (the engagement is
+# either not yet authorized or has expired). ISO-8601 datetimes; the
+# trailing 'Z' shorthand for UTC is accepted.
+window:
+  start: "2026-05-18T00:00:00Z"
+  end:   "2026-06-30T23:59:59Z"
+
+# Free-form notes for the operator's own records. Not interpreted by the
+# guard, surfaced in scope summaries.
+notes: |
+  External web-app pentest + internal /24 authorized by SoW Appendix B.
+  Out-of-band notifications: security@acme.example.
+  All findings to be reported via the Acme private bug-bounty channel.
