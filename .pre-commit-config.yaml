@@ -1,0 +1,37 @@
+# Pre-commit hooks for Scarlight.
+#
+# Install once:  uv pip install pre-commit && pre-commit install
+# Run manually:  pre-commit run --all-files
+#
+# These give contributors the same fast feedback CI enforces, before they
+# push. ruff/ty versions are kept in step with the pinned dev extras in
+# pyproject.toml ([project.optional-dependencies].dev).
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+        args: [--allow-multiple-documents]
+      - id: check-toml
+      - id: check-merge-conflict
+      - id: check-added-large-files
+        args: [--maxkb=1024]
+      - id: detect-private-key
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.15.10
+    hooks:
+      # Lint (uses the project's [tool.ruff] config — currently PLW1514).
+      - id: ruff
+        args: [--fix]
+      # Format changed files going forward. NOTE: a full-tree `ruff format`
+      # is intentionally NOT run yet — that is a separate, deliberate
+      # decision (it would reformat ~1600 inherited files). This hook keeps
+      # newly-touched files formatted so the tree cleans up incrementally.
+      - id: ruff-format
+
+# Note: type checking (`ty`) is run in CI (advisory, non-blocking) rather
+# than as a pre-commit hook, matching the project's toolchain in
+# .github/workflows/lint.yml.

@@ -309,3 +309,29 @@ select = ["PLW1514"]
 "skills/**" = ["PLW1514"]
 "optional-skills/**" = ["PLW1514"]
 "plugins/**" = ["PLW1514"]
+
+# Coverage config. `pytest-cov` is not in the pinned deps (supply-chain
+# policy keeps `dependencies`/dev minimal + exact-pinned); the coverage
+# CI job installs it ad hoc. Run locally with:
+#   uv pip install pytest-cov && pytest --cov --cov-report=term-missing
+[tool.coverage.run]
+branch = true
+source = ["agent", "tools", "scarlight_cli", "environments", "plugins", "providers"]
+omit = [
+  "*/tests/*",
+  "*/test_*.py",
+  "*/__pycache__/*",
+  "*/.venv/*",
+  "tinker-atropos/*",
+]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true
+exclude_lines = [
+  "pragma: no cover",
+  "raise NotImplementedError",
+  "if TYPE_CHECKING:",
+  "if __name__ == .__main__.:",
+  "@(abc\\.)?abstractmethod",
+]
