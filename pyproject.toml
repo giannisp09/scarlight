@@ -308,6 +308,7 @@ select = ["PLW1514"]
 # Skills and plugins are partially user-authored — their own conventions.
 "skills/**" = ["PLW1514"]
 "optional-skills/**" = ["PLW1514"]
+"archived-skills/**" = ["PLW1514"]
 "plugins/**" = ["PLW1514"]
 
 # Coverage config. `pytest-cov` is not in the pinned deps (supply-chain
