@@ -273,16 +273,18 @@ class TestBackendGate:
 
 class TestBundledBackendAutoLoad:
     def test_bundled_image_gen_openai_autoloads(self, tmp_path, monkeypatch):
-        """The bundled ``plugins/image_gen/openai/`` plugin loads without
-        any opt-in — it's ``kind: backend`` and shipped in-repo."""
+        """A bundled category ``kind: backend`` plugin loads without any
+        opt-in. The original ``image_gen/openai`` example was trimmed from
+        this fork, so this pins the equivalent bundled ``video_gen/fal``
+        backend to keep covering category-namespaced autoload."""
         import os
         scarlight_home = Path(os.environ["SCARLIGHT_HOME"])  # set by hermetic conftest fixture
 
         mgr = PluginManager()
         mgr.discover_and_load()
 
-        assert "image_gen/openai" in mgr._plugins
-        loaded = mgr._plugins["image_gen/openai"]
+        assert "video_gen/fal" in mgr._plugins
+        loaded = mgr._plugins["video_gen/fal"]
         assert loaded.manifest.source == "bundled"
         assert loaded.manifest.kind == "backend"
         assert loaded.enabled is True, f"error: {loaded.error}"

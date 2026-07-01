@@ -401,10 +401,11 @@ def test_load_enabled_toolsets_rejects_disabled_mcp_env(monkeypatch, capsys):
         config_mod, "load_config", lambda: {"platform_toolsets": {"cli": ["memory"]}}
     )
 
-    # Sorted: ["kanban", "memory"]. `kanban` is auto-recovered by
-    # _get_platform_tools because it's a non-configurable platform toolset
-    # whose tools live in scarlight-cli's universe (see toolsets.py).
-    assert server._load_enabled_toolsets() == ["kanban", "memory"]
+    # Only ["memory"] survives: the disabled MCP server is dropped and the
+    # configured CLI toolset list falls back to the sole `memory` entry. (The
+    # former `kanban` platform toolset was trimmed from this fork's offensive
+    # surface, so there is nothing left for _get_platform_tools to recover.)
+    assert server._load_enabled_toolsets() == ["memory"]
     err = capsys.readouterr().err
     assert "ignoring disabled MCP servers" in err
     assert "mcp-off" in err
@@ -425,7 +426,7 @@ def test_load_enabled_toolsets_falls_back_when_tui_env_invalid(monkeypatch, caps
         config_mod, "load_config", lambda: {"platform_toolsets": {"cli": ["memory"]}}
     )
 
-    assert server._load_enabled_toolsets() == ["kanban", "memory"]
+    assert server._load_enabled_toolsets() == ["memory"]
     assert "using configured CLI toolsets" in capsys.readouterr().err
 
 
@@ -636,7 +637,7 @@ def test_resolve_model_strips_config_model(monkeypatch):
 
 
 def test_startup_runtime_uses_tui_provider_env(monkeypatch):
-    monkeypatch.setenv("HERMES_MODEL", "nous/hermes-test")
+    monkeypatch.setenv("SCARLIGHT_MODEL", "nous/hermes-test")
     monkeypatch.setenv("SCARLIGHT_TUI_PROVIDER", "nous")
     monkeypatch.delenv("SCARLIGHT_INFERENCE_PROVIDER", raising=False)
 
@@ -644,7 +645,7 @@ def test_startup_runtime_uses_tui_provider_env(monkeypatch):
 
 
 def test_startup_runtime_does_not_treat_inference_provider_as_explicit(monkeypatch):
-    monkeypatch.setenv("HERMES_MODEL", "nous/hermes-test")
+    monkeypatch.setenv("SCARLIGHT_MODEL", "nous/hermes-test")
     monkeypatch.delenv("SCARLIGHT_TUI_PROVIDER", raising=False)
     monkeypatch.setenv("SCARLIGHT_INFERENCE_PROVIDER", "nous")
     monkeypatch.setattr(

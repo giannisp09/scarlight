@@ -21,6 +21,24 @@ sys.modules.setdefault("fal_client", types.SimpleNamespace())
 from run_agent import AIAgent
 
 
+# ── Fixtures ─────────────────────────────────────────────────────────────────
+
+@pytest.fixture(autouse=True)
+def _reset_aux_unhealthy_cache():
+    """Isolate the module-level auxiliary "unhealthy provider" cache.
+
+    ``get_text_auxiliary_client`` marks providers unhealthy in a process-wide
+    dict when they 402/fail. Without resetting it around each test, an earlier
+    test that trips that path leaks the mark into the auxiliary-priority tests
+    here (openrouter/nous show up as "unhealthy" and resolution returns None).
+    """
+    from agent.auxiliary_client import _reset_aux_unhealthy_cache as _reset
+
+    _reset()
+    yield
+    _reset()
+
+
 # ── Helpers ──────────────────────────────────────────────────────────────────
 
 def _tool_defs(*names):

@@ -769,7 +769,13 @@ class TestMatrixRequirements:
         monkeypatch.delenv("MATRIX_ENCRYPTION", raising=False)
 
         from gateway.platforms import matrix as matrix_mod
-        with patch.object(matrix_mod, "_check_e2ee_deps", return_value=False):
+        # Disable the lazy-install path so mautrix availability is deterministic
+        # and matches this test's own ``import mautrix`` probe. Without this,
+        # check_matrix_requirements() would pip-install mautrix on CI runners
+        # with network access and return True even when mautrix isn't
+        # pre-installed, contradicting the ImportError branch below.
+        with patch.object(matrix_mod, "_check_e2ee_deps", return_value=False), \
+                patch("tools.lazy_deps.ensure_and_bind", return_value=False):
             # Still needs mautrix itself to be importable
             try:
                 import mautrix  # noqa: F401

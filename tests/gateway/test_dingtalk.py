@@ -634,6 +634,7 @@ class TestIncomingHandlerProcess:
     @pytest.mark.asyncio
     async def test_process_extracts_session_webhook(self):
         """session_webhook must be populated from callback data."""
+        pytest.importorskip("dingtalk_stream")
         from gateway.platforms.dingtalk import _IncomingHandler, DingTalkAdapter
 
         adapter = DingTalkAdapter(PlatformConfig(enabled=True))
@@ -667,6 +668,7 @@ class TestIncomingHandlerProcess:
         """If ChatbotMessage.from_dict does not map sessionWebhook (e.g. SDK
         version mismatch), the handler should fall back to extracting it
         directly from the raw data dict."""
+        pytest.importorskip("dingtalk_stream")
         from gateway.platforms.dingtalk import _IncomingHandler, DingTalkAdapter
 
         adapter = DingTalkAdapter(PlatformConfig(enabled=True))
@@ -695,6 +697,7 @@ class TestIncomingHandlerProcess:
     async def test_process_returns_ack_immediately(self):
         """process() must not block on _on_message — it should return
         the ACK tuple before the message is fully processed."""
+        pytest.importorskip("dingtalk_stream")
         from gateway.platforms.dingtalk import _IncomingHandler, DingTalkAdapter
 
         processing_started = asyncio.Event()
@@ -824,6 +827,7 @@ class TestCardLifecycle:
     @pytest.mark.asyncio
     async def test_final_reply_finalizes_card(self, adapter_with_card):
         """send(reply_to=...) creates a closed card (final response path)."""
+        pytest.importorskip("alibabacloud_dingtalk.card_1_0")
         a = adapter_with_card
         result = await a.send("chat-1", "Hello", reply_to="user-msg-1")
         assert result.success
@@ -837,6 +841,7 @@ class TestCardLifecycle:
         """send() without reply_to creates an OPEN card (tool progress /
         commentary / streaming first chunk).  No flicker closed→streaming
         when edit_message follows."""
+        pytest.importorskip("alibabacloud_dingtalk.card_1_0")
         a = adapter_with_card
         result = await a.send("chat-1", "💻 terminal: ls")
         assert result.success
@@ -849,6 +854,7 @@ class TestCardLifecycle:
     async def test_done_fires_only_when_reply_to_is_set(self, adapter_with_card):
         """reply_to distinguishes final response (base.py) from tool-progress
         sends (run.py).  Done must only fire for the former."""
+        pytest.importorskip("alibabacloud_dingtalk.card_1_0")
         a = adapter_with_card
         fired: list[str] = []
         a._fire_done_reaction = lambda cid: fired.append(cid)
@@ -864,6 +870,7 @@ class TestCardLifecycle:
     @pytest.mark.asyncio
     async def test_edit_message_finalize_fires_done(self, adapter_with_card):
         """Stream consumer's final edit_message(finalize=True) fires Done."""
+        pytest.importorskip("alibabacloud_dingtalk.card_1_0")
         a = adapter_with_card
         fired: list[str] = []
         a._fire_done_reaction = lambda cid: fired.append(cid)
@@ -883,6 +890,7 @@ class TestCardLifecycle:
     @pytest.mark.asyncio
     async def test_edit_message_finalize_false_tracks_sibling(self, adapter_with_card):
         """After edit_message(finalize=False), card is tracked as open."""
+        pytest.importorskip("alibabacloud_dingtalk.card_1_0")
         a = adapter_with_card
         await a.edit_message(
             chat_id="chat-1", message_id="track-1",
@@ -897,6 +905,7 @@ class TestCardLifecycle:
     ):
         """Tool-progress card left open (send without reply_to + edits) must
         be auto-closed when the final-reply send arrives."""
+        pytest.importorskip("alibabacloud_dingtalk.card_1_0")
         a = adapter_with_card
         # First tool: intermediate send — card stays open.
         r1 = await a.send("chat-1", "💻 tool1")
@@ -988,6 +997,7 @@ class TestDingTalkAdapterAICards:
 
     @pytest.mark.asyncio
     async def test_send_uses_ai_card_if_configured(self, config, mock_stream_client, mock_http_client, mock_message):
+        pytest.importorskip("alibabacloud_dingtalk.card_1_0")
         from gateway.platforms.dingtalk import DingTalkAdapter
 
         adapter = DingTalkAdapter(config)

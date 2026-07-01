@@ -378,9 +378,9 @@ class TestIRCAdapterMessageParsing:
         await adapter._handle_line(":server 433 * scarlight :Nickname in use")
         assert adapter._current_nick == "scarlight_"
         await adapter._handle_line(":server 433 * scarlight_ :Nickname in use")
-        assert adapter._current_nick == "hermes_1"
-        await adapter._handle_line(":server 433 * hermes_1 :Nickname in use")
-        assert adapter._current_nick == "hermes_2"
+        assert adapter._current_nick == "scarlight_1"
+        await adapter._handle_line(":server 433 * scarlight_1 :Nickname in use")
+        assert adapter._current_nick == "scarlight_2"
 
 
 class TestIRCAdapterSplitting:

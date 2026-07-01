@@ -490,15 +490,15 @@ class RetainDBMemoryProvider(MemoryProvider):
         api_key = os.environ.get("RETAINDB_API_KEY", "")
         base_url = re.sub(r"/+$", "", os.environ.get("RETAINDB_BASE_URL", _DEFAULT_BASE_URL))
 
-        # Project resolution: RETAINDB_PROJECT > hermes-<profile> > "default"
+        # Project resolution: RETAINDB_PROJECT > scarlight-<profile> > "default"
         # If unset, the API auto-creates and uses the "default" project — no config required.
         explicit = os.environ.get("RETAINDB_PROJECT")
         if explicit:
             project = explicit
         else:
-            hermes_home = str(kwargs.get("hermes_home", ""))
-            profile_name = os.path.basename(hermes_home) if hermes_home else ""
-            project = f"hermes-{profile_name}" if (profile_name and profile_name not in {"", ".scarlight"}) else "default"
+            scarlight_home = str(kwargs.get("scarlight_home") or kwargs.get("hermes_home", ""))
+            profile_name = os.path.basename(scarlight_home) if scarlight_home else ""
+            project = f"scarlight-{profile_name}" if (profile_name and profile_name not in {"", ".scarlight"}) else "default"
 
         self._client = _Client(api_key, base_url, project)
         self._session_id = session_id

@@ -73,6 +73,10 @@ venv/bin/scarlight doctor
 venv/bin/scarlight chat -q "Hello"
 ```
 
+On **Windows**, run the PowerShell installer instead:
+[`scripts/install.ps1`](./scripts/install.ps1) (it provisions Python via `uv`
+and installs Scarlight natively — no WSL required).
+
 Add at least one LLM provider key (any of `ANTHROPIC_API_KEY`,
 `OPENAI_API_KEY`, `OPENROUTER_API_KEY`, …) to `~/.scarlight/.env`. Full
 setup — global symlink, config, browser tools — is in

@@ -33,7 +33,6 @@ DISTRIBUTIONS = {
         "toolsets": {
             "web": 100,
             "vision": 100,
-            "image_gen": 100,
             "terminal": 100,
             "file": 100,
             "moa": 100,
@@ -45,7 +44,6 @@ DISTRIBUTIONS = {
     "image_gen": {
         "description": "Heavy focus on image generation with vision and web support",
         "toolsets": {
-            "image_gen": 90,  # 80% chance of image generation tools
             "vision": 90,      # 60% chance of vision tools
             "web": 55,         # 40% chance of web tools
             "terminal": 45,
@@ -74,7 +72,6 @@ DISTRIBUTIONS = {
             "file": 94,      # 94% chance of file tools
             "vision": 65,    # 65% chance of vision tools
             "browser": 50,   # 50% chance of browser for accessing papers/databases
-            "image_gen": 15, # 15% chance of image generation tools
             "moa": 10        # 10% chance of reasoning tools
         }
     },
@@ -98,7 +95,6 @@ DISTRIBUTIONS = {
             "web": 80,
             "browser": 70,   # Browser is safe (no local filesystem access)
             "vision": 60,
-            "image_gen": 60,
             "moa": 50
         }
     },
@@ -109,7 +105,6 @@ DISTRIBUTIONS = {
         "toolsets": {
             "web": 50,
             "vision": 50,
-            "image_gen": 50,
             "terminal": 50,
             "file": 50,
             "moa": 50,
@@ -148,7 +143,6 @@ DISTRIBUTIONS = {
     "creative": {
         "description": "Image generation and vision analysis focus",
         "toolsets": {
-            "image_gen": 90,
             "vision": 90,
             "web": 30
         }
@@ -200,8 +194,7 @@ DISTRIBUTIONS = {
             "file": 97,       # 97% - file tools almost always available
             "web": 97,        # 15% - web search/scrape for documentation
             "browser": 75,    # 10% - browser occasionally for web interaction
-            "vision": 50,      # 8% - vision analysis rarely
-            "image_gen": 10    # 3% - image generation very rarely
+            "vision": 50      # 8% - vision analysis rarely
         }
     },
     
@@ -213,8 +206,7 @@ DISTRIBUTIONS = {
             "terminal": 92,   # 92% - terminal highly available
             "file": 92,       # 92% - file tools highly available
             "web": 35,        # 35% - web search/scrape fairly common
-            "vision": 15,     # 15% - vision analysis occasionally
-            "image_gen": 15   # 15% - image generation occasionally
+            "vision": 15     # 15% - vision analysis occasionally
         }
     }
 }

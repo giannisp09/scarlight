@@ -120,13 +120,19 @@ from gateway.config import Platform, PlatformConfig
 
 # Trigger registration of the dynamic ``google_chat`` enum member at module
 # import time.  ``_missing_()`` caches the pseudo-member in
-# ``_value2member_map_`` *and* ``_member_map_``, so after this call
-# ``Platform.GOOGLE_CHAT`` resolves via attribute access too.  Without this
-# line, any code (including tests) that references ``Platform.GOOGLE_CHAT``
-# before an adapter instance is constructed would hit ``AttributeError``.
-# Built-ins avoid this because they have explicit enum members; plugin
-# platforms earn the attribute by asking for it once.
-Platform("google_chat")
+# ``_value2member_map_`` *and* ``_member_map_`` so any code (including tests)
+# that references ``Platform.GOOGLE_CHAT`` before an adapter instance is
+# constructed resolves it.  Built-ins avoid this because they have explicit
+# enum members; plugin platforms earn the attribute by asking for it once.
+_GOOGLE_CHAT_PLATFORM = Platform("google_chat")
+# Python 3.13 removed ``EnumType.__getattr__``, so members added dynamically to
+# ``_member_map_`` are no longer exposed via attribute access (``Platform.X``)
+# the way they were on <=3.12.  Bind the pseudo-member as a real class
+# attribute so ``Platform.GOOGLE_CHAT`` keeps working.  ``EnumType.__setattr__``
+# refuses to (re)assign member names, so go through ``type.__setattr__`` to
+# bypass the guard.  Idempotent: only bind if not already present.
+if not isinstance(getattr(Platform, "GOOGLE_CHAT", None), Platform):
+    type.__setattr__(Platform, "GOOGLE_CHAT", _GOOGLE_CHAT_PLATFORM)
 from gateway.platforms.helpers import MessageDeduplicator
 from gateway.platforms.base import (
     BasePlatformAdapter,

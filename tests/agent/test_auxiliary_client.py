@@ -31,6 +31,22 @@ from agent.auxiliary_client import (
 
 
 @pytest.fixture(autouse=True)
+def _reset_aux_unhealthy_cache_between_tests():
+    """Isolate the process-wide auxiliary "unhealthy provider" cache.
+
+    The payment/expired-token fallback tests mark providers unhealthy in a
+    module-level dict. Without resetting it around every test, that mark leaks
+    into later tests (e.g. the openrouter/codex fallback cases) which then see
+    the provider as "unhealthy" and resolution returns ``None``.
+    """
+    from agent.auxiliary_client import _reset_aux_unhealthy_cache as _reset
+
+    _reset()
+    yield
+    _reset()
+
+
+@pytest.fixture(autouse=True)
 def _clean_env(monkeypatch):
     """Strip provider env vars so each test starts clean."""
     for key in (

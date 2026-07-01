@@ -15,6 +15,22 @@ from tests.gateway.feishu_helpers import (
     stub_mention,
 )
 
+# lark-oapi (Feishu SDK) is a lazy-install extra not in [all]. Detect it via the
+# *installed distribution metadata* rather than ``import lark_oapi`` — sibling
+# tests (test_feishu.py) inject a stub ``lark_oapi`` into ``sys.modules`` at
+# run-time, and under xdist that stub can be resident when this test runs, so
+# any import-based probe (``import`` / ``pytest.importorskip`` / ``find_spec``)
+# would be fooled into thinking the real SDK is present and run the test against
+# the stub (KeyError). ``importlib.metadata`` reads packaging metadata on disk,
+# which the stub never creates, so this flag is immune to that pollution.
+try:
+    from importlib.metadata import PackageNotFoundError, distribution
+
+    distribution("lark-oapi")
+    _HAS_LARK_OAPI = True
+except PackageNotFoundError:
+    _HAS_LARK_OAPI = False
+
 
 # --- FeishuAdapterSettings wiring ------------------------------------------
 
@@ -452,9 +468,14 @@ def test_admit_per_group_require_mention_overrides_global():
 # --- Hydration -------------------------------------------------------------
 
 
+@pytest.mark.skipif(
+    not _HAS_LARK_OAPI,
+    reason="lark-oapi (Feishu SDK) is a lazy-install extra not in [all]",
+)
 def test_hydrate_bot_identity_populates_self_ids_from_bot_v3_info(monkeypatch):
     import asyncio
 
+    # Exercises the lark_oapi BaseRequest builder directly.
     from gateway.platforms.feishu import FeishuAdapter
 
     adapter = object.__new__(FeishuAdapter)
