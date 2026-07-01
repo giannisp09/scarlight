@@ -784,18 +784,23 @@ class TestMatrixRequirements:
                 assert matrix_mod.check_matrix_requirements() is False
 
     def test_check_requirements_encryption_true_with_e2ee_deps(self, monkeypatch):
-        """MATRIX_ENCRYPTION=true should pass if E2EE deps are available."""
+        """MATRIX_ENCRYPTION=true should pass if E2EE deps are available.
+
+        This is the *deps-present* scenario, so it only makes sense when mautrix
+        is actually installed — skip otherwise (mautrix is a lazy-install extra
+        not in [all], absent on CI). The previous ``try/import/except`` form was
+        self-contradictory: it patched ``_check_e2ee_deps`` to True (forcing
+        requirements True) while the ImportError branch asserted False, so it
+        failed on any runner without mautrix.
+        """
+        pytest.importorskip("mautrix")
         monkeypatch.setenv("MATRIX_ACCESS_TOKEN", "syt_test")
         monkeypatch.setenv("MATRIX_HOMESERVER", "https://matrix.example.org")
         monkeypatch.setenv("MATRIX_ENCRYPTION", "true")
 
         from gateway.platforms import matrix as matrix_mod
         with patch.object(matrix_mod, "_check_e2ee_deps", return_value=True):
-            try:
-                import mautrix  # noqa: F401
-                assert matrix_mod.check_matrix_requirements() is True
-            except ImportError:
-                assert matrix_mod.check_matrix_requirements() is False
+            assert matrix_mod.check_matrix_requirements() is True
 
 
 # ---------------------------------------------------------------------------
