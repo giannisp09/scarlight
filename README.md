@@ -1,5 +1,17 @@
 # Scarlight
 
+<p align="center">
+  <img src="assets/banner.png" alt="Scarlight" width="100%">
+</p>
+
+<p align="center">
+  <a href="https://github.com/giannisp09/scarlight/actions/workflows/tests.yml"><img src="https://github.com/giannisp09/scarlight/actions/workflows/tests.yml/badge.svg" alt="Tests"></a>
+  <a href="https://github.com/giannisp09/scarlight/actions/workflows/lint.yml"><img src="https://github.com/giannisp09/scarlight/actions/workflows/lint.yml/badge.svg" alt="Lint"></a>
+  <a href="./LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0-blue.svg" alt="License: Apache 2.0"></a>
+  <img src="https://img.shields.io/badge/python-3.11%20|%203.12%20|%203.13-blue.svg" alt="Python 3.11–3.13">
+  <a href="./CODE_OF_USE.md"><img src="https://img.shields.io/badge/use-authorized%20only-critical.svg" alt="Authorized use only"></a>
+</p>
+
 > **A universal, self-improving agent harness for cyber superintelligence — offensive-security first.**
 
 Scarlight is an open-source agent harness for offensive security work: authorized penetration testing, bug bounty hunting, CTF, red-team operations, and security research. It is opinionated, sandboxed, scope-aware, and designed to *compound* — the harness, the skill library, and the agent population get measurably better with use.
@@ -36,6 +48,69 @@ Scarlight is the harness that fixes this. It is to offensive security what Claud
 - **Not a model.** Scarlight is model-agnostic. Frontier models (Claude, GPT, Gemini), open-weights (Llama, Qwen, DeepSeek), and local models are all first-class.
 - **Not a framework.** Scarlight is a harness — opinionated control flow, runtime, and infrastructure. You write skills and policies, not glue.
 - **Not closed source.** Apache 2.0 core, with an explicit Authorized Use Policy. See [`CODE_OF_USE.md`](./CODE_OF_USE.md).
+
+---
+
+## Quickstart
+
+> ⚠️ **Authorized use only.** Scarlight is for systems you own or have written
+> authorization to test. Read [`CODE_OF_USE.md`](./CODE_OF_USE.md) first.
+
+Requires **Python 3.11+** and [**uv**](https://docs.astral.sh/uv/).
+
+```bash
+# Clone
+git clone --recurse-submodules https://github.com/giannisp09/scarlight.git
+cd scarlight
+
+# Create a venv and install (all extras + dev tools)
+uv venv venv --python 3.11
+export VIRTUAL_ENV="$(pwd)/venv"
+uv pip install -e ".[all,dev]"
+
+# First run — health check, then a smoke chat
+venv/bin/scarlight doctor
+venv/bin/scarlight chat -q "Hello"
+```
+
+Add at least one LLM provider key (any of `ANTHROPIC_API_KEY`,
+`OPENAI_API_KEY`, `OPENROUTER_API_KEY`, …) to `~/.scarlight/.env`. Full
+setup — global symlink, config, browser tools — is in
+[`CONTRIBUTING.md`](./CONTRIBUTING.md#development-setup).
+
+### See it drive an engagement
+
+```bash
+demo/run.sh
+```
+
+A ~3-minute recordable showcase: scope-guard refusal → signed
+authorization → lab spin-up → Kali-sandboxed engagement → an
+autonomously-written skill → teardown. Offensive work runs against an
+opt-in [`engagement.yaml`](./engagement.yaml.example) scope — targets you
+haven't authorized are refused.
+
+---
+
+## Benchmarks
+
+Scarlight ships a **benchmark-agnostic evaluation harness**
+([`environments/benchmarks/`](./environments/benchmarks/)) so capability is
+measured, not asserted. It provides an adapter protocol, a per-run budget +
+`max_usd` cost cap, a run recorder (`scarlight-bench-v1` schema),
+contamination checks, reporting, and an [Inspect](https://inspect.aisi.org.uk/)
+bridge.
+
+| Benchmark | Status |
+|-----------|--------|
+| **ExploitGym** | Wired onto the harness (SkyPilot one-command cloud runner) |
+| **Cybench** | Adapter scaffolded |
+| **XBOW / HTB** | Adapters scaffolded (live wiring in progress) |
+
+A **Tier-0 offline suite** (MockAdapter + StubModel, 70 tests, no LLM or
+Docker) runs in ~3s and gates the harness in CI. See
+[`specs/benchmarking-harness-v1/`](./specs/benchmarking-harness-v1/) for the
+design and validation plan.
 
 ---
 
@@ -105,7 +180,9 @@ See [`specs/roadmap.md`](./specs/roadmap.md) for the plan and [`specs/fork-runbo
 
 ## Status
 
-**Phases 0 + 1 complete; Phase 2 (v1.1 active exploitation) skills landed.** fork-runbook Steps 1–9 are done: the hermes-agent fork landed, was rebranded (`hermes` → `scarlight`, relicensed Apache-2.0), trimmed to the offensive surface, re-aimed at offensive-security work with seeded `recon` and `web-basic` skills, pinned to a Kali sandbox (`kalilinux/kali-last-release`), gated behind an `engagement.yaml` authorization-scope guard, and driven end-to-end against an OWASP Juice Shop lab — recon → six findings → an autonomously-refined `juice-shop-fingerprint` skill. **Phase 2 (v1.1 active exploitation)** then landed eight kill-chain skills (`web-exploit`, `password-attack`, `service-exploit`, `payload-craft`, `privesc-linux`, `privesc-windows`, `credential-harvest`, `lateral-movement`), the offensive `CONVENTIONS.md`, per-target authorization enforcement, and a host-persisted `~/.scarlight/audit/exploitation.jsonl` audit trail. v1.1 passes its static acceptance gates (scope-guard, documentation, regression — see [`specs/exploitation-v1/validation.md`](./specs/exploitation-v1/validation.md)); the live kill-chain suite is the remaining gate before tagging v1.0 / v1.1.
+**Phases 0 + 1 complete; Phase 2 (v1.1 active exploitation) skills landed.** fork-runbook Steps 1–9 are done: the hermes-agent fork landed, was rebranded (`hermes` → `scarlight`, relicensed Apache-2.0), trimmed to the offensive surface, re-aimed at offensive-security work with seeded `recon` and `web-basic` skills, pinned to a Kali sandbox (`kalilinux/kali-last-release`), gated behind an `engagement.yaml` authorization-scope guard, and driven end-to-end against an OWASP Juice Shop lab — recon → six findings → an autonomously-refined `juice-shop-fingerprint` skill. **Phase 2 (v1.1 active exploitation)** then landed eight kill-chain skills (`web-exploit`, `password-attack`, `service-exploit`, `payload-craft`, `privesc-linux`, `privesc-windows`, `credential-harvest`, `lateral-movement`), the offensive `CONVENTIONS.md`, per-target authorization enforcement, and a host-persisted `~/.scarlight/audit/exploitation.jsonl` audit trail. v1.1 passes its static acceptance gates (scope-guard, documentation, regression — see [`specs/exploitation-v1/validation.md`](./specs/exploitation-v1/validation.md)); the live kill-chain suite is the remaining gate for full active-exploitation sign-off.
+
+**`v1.0.0`** is tagged (first public release). **`v1.1.0`** adds the benchmarking harness (see [Benchmarks](#benchmarks)) and this release's public-readiness pass. See [`CHANGELOG.md`](./CHANGELOG.md) for the full history.
 
 A recordable showcase lives at [`demo/`](./demo/) — `demo/run.sh` drives the full engagement in ~3 minutes with seven banner-framed acts (scope-guard refusal → authorization → lab spin-up → Kali sandbox engagement → autonomous skill write → teardown).
 

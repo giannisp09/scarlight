@@ -81,8 +81,8 @@ This isn't a quality bar — it's a coupling-and-maintenance decision. Memory pr
 ### Clone and install
 
 ```bash
-git clone --recurse-submodules https://github.com/NousResearch/hermes-agent.git
-cd scarlight-agent
+git clone --recurse-submodules https://github.com/giannisp09/scarlight.git
+cd scarlight
 
 # Create venv with Python 3.11
 uv venv venv --python 3.11
