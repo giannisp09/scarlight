@@ -84,6 +84,7 @@ models-dev-upstream/
 # in the scarlight-console repo (bridges/). Must NOT enter OSS public history.
 query_bridge.py
 recon_bridge.py
+connectors_bridge.py
 
 # semideus-cognition local agent worktrees / scratch — never committed.
 .semideus/
