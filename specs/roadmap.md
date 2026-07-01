@@ -64,6 +64,22 @@
 - C2 / implant frameworks (Sliver, Mythic, Havoc) — indefinitely deferred.
 - EDR / AV evasion engineering — indefinitely deferred.
 
+## Phase 3 — Benchmarking harness (lab-grade numbers)
+
+**Goal:** produce a Scarlight capability number that is *comparable, reproducible, and honest about its budget* — not one stochastic data point with an implicit budget. See [`benchmarking-harness-v1/`](./benchmarking-harness-v1/).
+
+- A benchmark-agnostic harness (`environments/benchmarks/harness/`): the `BenchmarkAdapter` protocol, an explicit recorded `Budget` + per-task `max_usd` hard cap, a `RunRecorder` emitting the unified `scarlight-bench/v1` schema, and a generic runner spanning the capability ladder (`knowledge`/`ctf`/`exploit-dev`/`web-pentest`/`kill-chain`).
+- Machine-verified scoring only: a self-report or LLM judge can never set `solved`; the expected flag is the scorer's independent ground truth.
+- Rigor controls the field treats as table stakes: `pass@k`, N-seed `mean±std`, `first_solve_turn`, full cost accounting, contamination tagging, and a clean split between the **model** claim (`mode=model-swap`) and the **system/product** claim (`mode=system`) — never cross-aggregated.
+- ExploitGym (`exploit-dev`) refactored onto the protocol (CLI back-compatible); Cybench (`ctf`) added as the first new rung (40 tasks / 6 domains); XBOW (`web-pentest`) and HTB (`kill-chain`) wired as adapter stubs with deferred suites; an optional Inspect-Cyber bridge for leaderboard comparability.
+
+**Exit criteria:**
+- Tier 0 (credit-free, deterministic doubles) fully green in CI: protocol round-trip, metrics correctness, scoring discipline, objective authenticity, reproducibility, two-axis modes — zero LLM calls.
+- `harness/` contains zero per-benchmark branches; the protocol spans all four rungs.
+- A reported number is publishable only with `N≥5` seeds, explicit `k`, explicit `budget`, recorded `cost`, declared `mode`, and a contamination flag.
+
+**Deferred to follow-up specs:** full XBOW/AutoPenBench web-app target packaging; full HTB kill-chain network sandbox + VPN authz (depends on `exploitation-v1` live validation); knowledge-MCQ + CAIBench meta-suite; tamper-evident result signing; the live Cybench docker-compose + Inspect Tier 2 cross-check suites.
+
 ## Later — Architecture revisit (deferred)
 
 After v1 is real and there are learnings from running it, the broader architecture is re-planned. Open questions parked until then: deterministic finding-validation, scope-enforcement as a separate trust domain, an evaluation harness, harness-level self-modification, heavier sandboxing.

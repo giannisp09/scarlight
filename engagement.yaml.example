@@ -61,6 +61,13 @@ targets:
   - "api.acme-webapp.example.com"
   - "10.10.10.0/24"
 
+# Opt-in gate for phishing delivery. The payload-craft skill (gophish
+# skeletons) and the phishing-campaign skill (draft + send + track via Lancea)
+# both REFUSE unless this is literally `true`. It is the operator's signed
+# assertion that phishing the people in scope has been authorized by the
+# engagement's legal owner. Leave false (or omit) for non-phishing engagements.
+phishing_authorized: false
+
 # Optional engagement window. If start is set and in the future, or end
 # is set and in the past, the guard refuses to start (the engagement is
 # either not yet authorized or has expired). ISO-8601 datetimes; the
