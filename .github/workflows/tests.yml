@@ -117,14 +117,23 @@ jobs:
           uv pip install pytest-cov
 
       - name: Run tests with coverage
+        # Explicitly non-gating: this job reports coverage, it does not
+        # decide pass/fail (the `test` matrix owns that). We capture pytest's
+        # real exit code, surface it in the summary, and still publish the
+        # report even when some tests fail.
         run: |
           source .venv/bin/activate
+          set +e
           python -m pytest tests/ -q \
             --ignore=tests/integration --ignore=tests/e2e \
             -n auto \
             --cov --cov-report=xml --cov-report=term | tee coverage-output.txt
+          pytest_rc=${PIPESTATUS[0]}
+          set -e
           echo "### Coverage" >> "$GITHUB_STEP_SUMMARY"
           grep -E '^TOTAL' coverage-output.txt >> "$GITHUB_STEP_SUMMARY" || true
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "_pytest exit code: ${pytest_rc} (coverage job is non-gating)_" >> "$GITHUB_STEP_SUMMARY"
         env:
           OPENROUTER_API_KEY: ""
           OPENAI_API_KEY: ""
