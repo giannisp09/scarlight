@@ -1,0 +1,14 @@
+# Code owners for Scarlight.
+# These owners are requested for review automatically on any PR that
+# touches matching paths. See:
+# https://docs.github.com/en/repositories/managing-your-repositories-permissions-and-settings/customizing-your-repository/about-code-owners
+
+# Default owner for everything in the repo.
+*                           @giannisp09
+
+# Security-sensitive surfaces — always review.
+/skills/offensive/          @giannisp09
+/scarlight_cli/engagement_scope.py  @giannisp09
+/SECURITY.md                @giannisp09
+/CODE_OF_USE.md             @giannisp09
+/environments/benchmarks/   @giannisp09

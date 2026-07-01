@@ -83,8 +83,24 @@ _UTC_NOW = lambda: datetime.now(timezone.utc)
 # Official docs snapshot entries. Models whose published pricing and cache
 # semantics are stable enough to encode exactly.
 _OFFICIAL_DOCS_PRICING: Dict[tuple[str, str], PricingEntry] = {
+    # ── Anthropic Claude 4.8 ─────────────────────────────────────────────
+    # Opus 4.5–4.8 share $5/$25 pricing. OpenRouter slug
+    # ``anthropic/claude-opus-4.8`` normalizes to ``claude-opus-4-8``.
+    # Source: https://platform.claude.com/docs/en/about-claude/pricing
+    (
+        "anthropic",
+        "claude-opus-4-8",
+    ): PricingEntry(
+        input_cost_per_million=Decimal("5.00"),
+        output_cost_per_million=Decimal("25.00"),
+        cache_read_cost_per_million=Decimal("0.50"),
+        cache_write_cost_per_million=Decimal("6.25"),
+        source="official_docs_snapshot",
+        source_url="https://platform.claude.com/docs/en/about-claude/pricing",
+        pricing_version="anthropic-pricing-2026-05",
+    ),
     # ── Anthropic Claude 4.7 ─────────────────────────────────────────────
-    # Opus 4.5/4.6/4.7 share $5/$25 pricing (new tokenizer, up to 35% more
+    # Opus 4.5–4.8 share $5/$25 pricing (new tokenizer, up to 35% more
     # tokens for the same text).
     # Source: https://platform.claude.com/docs/en/about-claude/pricing
     (

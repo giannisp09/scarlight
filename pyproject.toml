@@ -4,12 +4,36 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "scarlight"
-version = "0.13.0"
+version = "1.1.0"
 description = "The self-improving AI agent — creates skills from experience, improves them during use, and runs anywhere"
 readme = "README.md"
 requires-python = ">=3.11"
 authors = [{ name = "Scarlight contributors" }]
 license = { text = "Apache-2.0" }
+keywords = [
+  "ai-agent",
+  "offensive-security",
+  "penetration-testing",
+  "llm",
+  "security",
+  "red-team",
+  "autonomous-agent",
+  "self-improving",
+]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Developers",
+  "Intended Audience :: Information Technology",
+  "License :: OSI Approved :: Apache Software License",
+  "Operating System :: POSIX :: Linux",
+  "Operating System :: MacOS",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Topic :: Security",
+  "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
 dependencies = [
   # Core — every direct dep is exact-pinned to ==X.Y.Z (no ranges).
   # Rationale: ranges allow PyPI to ship a fresh version of a transitive
@@ -61,6 +85,13 @@ dependencies = [
   # `os.killpg` (which doesn't exist on Windows).
   "psutil==7.2.2",
 ]
+
+[project.urls]
+Homepage = "https://github.com/giannisp09/scarlight"
+Repository = "https://github.com/giannisp09/scarlight"
+Issues = "https://github.com/giannisp09/scarlight/issues"
+Documentation = "https://github.com/giannisp09/scarlight/blob/main/README.md"
+Changelog = "https://github.com/giannisp09/scarlight/blob/main/CHANGELOG.md"
 
 [project.optional-dependencies]
 # Native Anthropic provider — only needed when provider=anthropic (not via
@@ -277,4 +308,31 @@ select = ["PLW1514"]
 # Skills and plugins are partially user-authored — their own conventions.
 "skills/**" = ["PLW1514"]
 "optional-skills/**" = ["PLW1514"]
+"archived-skills/**" = ["PLW1514"]
 "plugins/**" = ["PLW1514"]
+
+# Coverage config. `pytest-cov` is not in the pinned deps (supply-chain
+# policy keeps `dependencies`/dev minimal + exact-pinned); the coverage
+# CI job installs it ad hoc. Run locally with:
+#   uv pip install pytest-cov && pytest --cov --cov-report=term-missing
+[tool.coverage.run]
+branch = true
+source = ["agent", "tools", "scarlight_cli", "environments", "plugins", "providers"]
+omit = [
+  "*/tests/*",
+  "*/test_*.py",
+  "*/__pycache__/*",
+  "*/.venv/*",
+  "tinker-atropos/*",
+]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true
+exclude_lines = [
+  "pragma: no cover",
+  "raise NotImplementedError",
+  "if TYPE_CHECKING:",
+  "if __name__ == .__main__.:",
+  "@(abc\\.)?abstractmethod",
+]

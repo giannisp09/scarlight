@@ -1,0 +1,81 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://scarlight.dev/schemas/scarlight-bench-v1.json",
+  "title": "scarlight-bench/v1 result row",
+  "description": "One JSON object per (task, seed, attempt) in scoreboard.jsonl. The schema is versioned (scarlight-bench/v1), so new fields imply a new version — unknown top-level keys are rejected to catch typos and junk.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "benchmark",
+    "rung",
+    "task_id",
+    "seed",
+    "attempt",
+    "mode",
+    "scaffold",
+    "model",
+    "budget",
+    "outcome_class",
+    "first_solve_turn",
+    "subtask_completion",
+    "cost",
+    "judge_signal",
+    "contamination",
+    "transcript_path",
+    "harness_commit"
+  ],
+  "properties": {
+    "schema": {"const": "scarlight-bench/v1"},
+    "benchmark": {"type": "string", "minLength": 1},
+    "rung": {
+      "type": "string",
+      "enum": ["knowledge", "ctf", "exploit-dev", "web-pentest", "kill-chain"]
+    },
+    "task_id": {"type": "string", "minLength": 1},
+    "seed": {"type": "integer"},
+    "attempt": {"type": "integer", "minimum": 0},
+    "k": {"type": "integer", "minimum": 1},
+    "mode": {"type": "string", "enum": ["system", "model-swap"]},
+    "scaffold": {"type": "string", "enum": ["stage1", "stage2", "inspect"]},
+    "model": {"type": "string", "minLength": 1},
+    "budget": {
+      "type": "object",
+      "required": ["max_turns"],
+      "properties": {
+        "max_turns": {"type": "integer", "minimum": 1},
+        "wall_clock_s": {"type": ["integer", "null"]},
+        "max_tokens": {"type": ["integer", "null"]},
+        "max_usd": {"type": ["number", "null"]}
+      }
+    },
+    "outcome_class": {
+      "type": "string",
+      "enum": ["solved", "failed", "budget_exhausted", "refused", "harness_error"]
+    },
+    "first_solve_turn": {"type": ["integer", "null"]},
+    "subtask_completion": {"type": ["number", "null"], "minimum": 0, "maximum": 1},
+    "cost": {
+      "type": "object",
+      "required": ["usd", "input_tokens", "output_tokens", "wall_clock_s"],
+      "properties": {
+        "usd": {"type": ["number", "null"]},
+        "input_tokens": {"type": "integer", "minimum": 0},
+        "output_tokens": {"type": "integer", "minimum": 0},
+        "wall_clock_s": {"type": "number", "minimum": 0}
+      }
+    },
+    "judge_signal": {"type": ["object", "string", "number", "boolean", "null"]},
+    "contamination": {
+      "type": "object",
+      "required": ["flag"],
+      "properties": {
+        "model_cutoff": {"type": ["string", "null"]},
+        "task_published": {"type": ["string", "null"]},
+        "flag": {"type": "string", "enum": ["suspect", "clean", "unknown"]}
+      }
+    },
+    "transcript_path": {"type": ["string", "null"]},
+    "harness_commit": {"type": "string"}
+  }
+}

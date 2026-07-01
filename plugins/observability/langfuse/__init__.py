@@ -9,16 +9,16 @@ runtime the plugin also requires the ``langfuse`` SDK and credentials; if
 either is missing the hooks are inert.
 
 Required env vars (set via ``hermes tools`` or ~/.scarlight/.env):
-  HERMES_LANGFUSE_PUBLIC_KEY  - Langfuse project public key (pk-lf-...)
-  HERMES_LANGFUSE_SECRET_KEY  - Langfuse project secret key (sk-lf-...)
-  HERMES_LANGFUSE_BASE_URL    - Langfuse server URL (default: https://cloud.langfuse.com)
+  SCARLIGHT_LANGFUSE_PUBLIC_KEY  - Langfuse project public key (pk-lf-...)
+  SCARLIGHT_LANGFUSE_SECRET_KEY  - Langfuse project secret key (sk-lf-...)
+  SCARLIGHT_LANGFUSE_BASE_URL    - Langfuse server URL (default: https://cloud.langfuse.com)
 
 Optional env vars:
-  HERMES_LANGFUSE_ENV         - environment tag (e.g. "production", "local")
-  HERMES_LANGFUSE_RELEASE     - release/version tag
-  HERMES_LANGFUSE_SAMPLE_RATE - sampling rate 0.0–1.0 (default: 1.0)
-  HERMES_LANGFUSE_MAX_CHARS   - max chars per field (default: 12000)
-  HERMES_LANGFUSE_DEBUG       - set to "true" for verbose logging
+  SCARLIGHT_LANGFUSE_ENV         - environment tag (e.g. "production", "local")
+  SCARLIGHT_LANGFUSE_RELEASE     - release/version tag
+  SCARLIGHT_LANGFUSE_SAMPLE_RATE - sampling rate 0.0–1.0 (default: 1.0)
+  SCARLIGHT_LANGFUSE_MAX_CHARS   - max chars per field (default: 12000)
+  SCARLIGHT_LANGFUSE_DEBUG       - set to "true" for verbose logging
 """
 from __future__ import annotations
 
@@ -72,7 +72,7 @@ def _env_bool(*names: str) -> bool:
 
 
 def _debug_enabled() -> bool:
-    return _env_bool("HERMES_LANGFUSE_DEBUG")
+    return _env_bool("SCARLIGHT_LANGFUSE_DEBUG")
 
 
 def _debug(message: str) -> None:
@@ -105,16 +105,16 @@ def _get_langfuse() -> Optional[Langfuse]:
         _LANGFUSE_CLIENT = _INIT_FAILED
         return None
 
-    public_key = _env("HERMES_LANGFUSE_PUBLIC_KEY") or _env("LANGFUSE_PUBLIC_KEY")
-    secret_key = _env("HERMES_LANGFUSE_SECRET_KEY") or _env("LANGFUSE_SECRET_KEY")
+    public_key = _env("SCARLIGHT_LANGFUSE_PUBLIC_KEY") or _env("LANGFUSE_PUBLIC_KEY")
+    secret_key = _env("SCARLIGHT_LANGFUSE_SECRET_KEY") or _env("LANGFUSE_SECRET_KEY")
     if not (public_key and secret_key):
         _LANGFUSE_CLIENT = _INIT_FAILED
         return None
 
-    base_url = _env("HERMES_LANGFUSE_BASE_URL") or _env("LANGFUSE_BASE_URL") or "https://cloud.langfuse.com"
-    environment = _env("HERMES_LANGFUSE_ENV") or _env("LANGFUSE_ENV")
-    release = _env("HERMES_LANGFUSE_RELEASE") or _env("LANGFUSE_RELEASE")
-    sample_rate = _env("HERMES_LANGFUSE_SAMPLE_RATE")
+    base_url = _env("SCARLIGHT_LANGFUSE_BASE_URL") or _env("LANGFUSE_BASE_URL") or "https://cloud.langfuse.com"
+    environment = _env("SCARLIGHT_LANGFUSE_ENV") or _env("LANGFUSE_ENV")
+    release = _env("SCARLIGHT_LANGFUSE_RELEASE") or _env("LANGFUSE_RELEASE")
+    sample_rate = _env("SCARLIGHT_LANGFUSE_SAMPLE_RATE")
 
     kwargs: Dict[str, Any] = {
         "public_key": public_key,
@@ -129,7 +129,7 @@ def _get_langfuse() -> Optional[Langfuse]:
         try:
             kwargs["sample_rate"] = float(sample_rate)
         except ValueError:
-            logger.warning("Invalid HERMES_LANGFUSE_SAMPLE_RATE=%r", sample_rate)
+            logger.warning("Invalid SCARLIGHT_LANGFUSE_SAMPLE_RATE=%r", sample_rate)
 
     try:
         _LANGFUSE_CLIENT = Langfuse(**kwargs)
@@ -285,7 +285,7 @@ def _normalize_payload(value: Any, *, tool_name: str = "", args: Any = None) -> 
 
 def _safe_value(value: Any, *, max_chars: Optional[int] = None, depth: int = 0,
                 parse_json_strings: bool = False) -> Any:
-    max_chars = max_chars if max_chars is not None else int(_env("HERMES_LANGFUSE_MAX_CHARS", "12000") or "12000")
+    max_chars = max_chars if max_chars is not None else int(_env("SCARLIGHT_LANGFUSE_MAX_CHARS", "12000") or "12000")
     if depth > 4:
         return "<max-depth>"
     if value is None or isinstance(value, (int, float, bool)):
@@ -566,7 +566,16 @@ def _finish_trace(task_key: str, *, output: Any = None) -> None:
             _end_observation(observation)
         final_output = _merge_trace_output(output, state)
         if final_output is not None:
-            state.root_span.set_trace_io(output=final_output)
+            # `set_trace_io` was removed from LangfuseSpan/LangfuseChain in
+            # langfuse 3.x. Isolate it so its AttributeError cannot skip the
+            # update()+end() below — otherwise the root span never ends, the
+            # trace is never finalized, and its name + session_id are dropped
+            # (traces land but no Session forms). The input-side call in
+            # _start_root_trace is already guarded the same way.
+            try:
+                state.root_span.set_trace_io(output=final_output)
+            except Exception:  # noqa: BLE001
+                pass
             state.root_span.update(output=final_output)
         state.root_span.end()
     except Exception as exc:  # pragma: no cover - fail-open

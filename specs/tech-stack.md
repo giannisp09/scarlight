@@ -68,6 +68,10 @@ The reason to fork rather than greenfield — these carry over with minimal or n
 - **Offensive skill seeds** — a starter set of offensive-security skills.
 - **Offensive tool wrappers** — offensive tooling registered through the existing tool layer; v1 runs them via hermes-agent's existing Docker execution backend with a Kali-style image.
 - **A minimal authorization guard** — a scope/authorization config file and a pre-flight check that runs before any engagement. This is intentionally small: a config + a check, not an architectural subsystem. It exists because Scarlight is an offensive tool and acting without an authorization check would be irresponsible.
+- **Benchmarking harness** (Phase 3) — a benchmark-agnostic runner + results schema in `environments/benchmarks/harness/`, with machine-verified scoring and the field's rigor controls. OSS-first / local-capable: the runner and all scoring run locally; tracing (Langfuse / W&B) is optional and off the critical path. External benchmarks are **not vendored** — clone them as siblings and `pip install -e` into the venv, mirroring the ExploitGym pattern:
+  - **ExploitGym** (`cybergym`, Apache-2.0) — `exploit-dev` rung; userspace task family is the default target (kernel data is GPL-2.0).
+  - **Cybench** (`andyzorigin/cybench`, MIT) — `ctf` rung; 40 tasks / 6 domains via docker-compose targets (enumeration works offline from an embedded manifest).
+  - **Inspect Cyber** (`inspect_ai` / `inspect_evals`, UK AISI) — an *optional* bridge for leaderboard comparability; imported lazily, never on the critical path, never required for a native run.
 
 ## Licensing
 

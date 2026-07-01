@@ -45,7 +45,7 @@ Bundled skills (in `skills/`) ship with every Scarlight install. They should be 
 
 If your skill is official and useful but not universally needed (e.g., a paid service integration, a heavyweight dependency), put it in **`optional-skills/`** — it ships with the repo but isn't activated by default. Users can discover it via `scarlight skills browse` (labeled "official") and install it with `scarlight skills install` (no third-party warning, builtin trust).
 
-If your skill is specialized, community-contributed, or niche, it's better suited for a **Skills Hub** — upload it to a skills registry and share it in the [Nous Research Discord](https://discord.gg/NousResearch). Users can install it with `scarlight skills install`.
+If your skill is specialized, community-contributed, or niche, it's better suited for a **Skills Hub** — upload it to a skills registry and share it with the community. Users can install it with `scarlight skills install`.
 
 ---
 
@@ -81,8 +81,8 @@ This isn't a quality bar — it's a coupling-and-maintenance decision. Memory pr
 ### Clone and install
 
 ```bash
-git clone --recurse-submodules https://github.com/NousResearch/hermes-agent.git
-cd scarlight-agent
+git clone --recurse-submodules https://github.com/giannisp09/scarlight.git
+cd scarlight
 
 # Create venv with Python 3.11
 uv venv venv --python 3.11
@@ -198,7 +198,7 @@ scarlight-agent/
 ├── optional-skills/          # Official optional skills (discoverable via hub, not activated by default)
 ├── environments/             # RL training environments (Atropos integration)
 ├── tests/                    # Test suite
-├── website/                  # Documentation site (scarlight-agent.nousresearch.com)
+├── docs/                     # Architecture docs, ADRs, and design references
 │
 ├── cli-config.yaml.example   # Example configuration (copied to ~/.scarlight/config.yaml)
 └── AGENTS.md                 # Development guide for AI coding assistants
@@ -864,7 +864,7 @@ test(tools): add unit tests for file_operations
 
 ## Reporting Issues
 
-- Use [GitHub Issues](https://github.com/NousResearch/hermes-agent/issues)
+- Use [GitHub Issues](https://github.com/giannisp09/scarlight/issues)
 - Include: OS, Python version, Scarlight version (`scarlight version`), full error traceback
 - Include steps to reproduce
 - Check existing issues before creating duplicates
@@ -874,8 +874,8 @@ test(tools): add unit tests for file_operations
 
 ## Community
 
-- **Discord**: [discord.gg/NousResearch](https://discord.gg/NousResearch) — for questions, showcasing projects, and sharing skills
-- **GitHub Discussions**: For design proposals and architecture discussions
+- **GitHub Issues**: [report bugs and request features](https://github.com/giannisp09/scarlight/issues)
+- **GitHub Discussions**: For questions, design proposals, and architecture discussions
 - **Skills Hub**: Upload specialized skills to a registry and share them with the community
 
 ---
