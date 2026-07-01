@@ -10,6 +10,25 @@ import pytest
 from gateway.config import Platform, PlatformConfig
 
 
+@pytest.fixture(autouse=True)
+def _forbid_lazy_installs(monkeypatch):
+    """Keep these SDK-gated tests hermetic.
+
+    The DingTalk adapter lazy-installs ``dingtalk-stream`` /
+    ``alibabacloud-dingtalk`` (``tools.lazy_deps.ensure``) at runtime. On a CI
+    runner where those extras aren't in ``[all]``, constructing the adapter
+    would pip-install the SDK mid-run — after the module-level ``import
+    dingtalk_stream`` already failed and left ``ChatbotMessage = None``. The
+    now-importable dist then defeats ``pytest.importorskip`` (it stops
+    skipping), so the test runs against the stale ``None`` global and crashes.
+    Forbidding the runtime install keeps the SDK genuinely absent, so the
+    importorskip guards skip cleanly. Scoped to this file so provider tests
+    that legitimately rely on lazy-install (anthropic, daytona, …) are
+    unaffected.
+    """
+    monkeypatch.setenv("SCARLIGHT_DISABLE_LAZY_INSTALLS", "1")
+
+
 # ---------------------------------------------------------------------------
 # Requirements check
 # ---------------------------------------------------------------------------

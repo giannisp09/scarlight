@@ -12,6 +12,16 @@ from gateway.config import Platform, PlatformConfig
 from gateway.platforms.base import MessageType
 
 
+@pytest.fixture(autouse=True)
+def _forbid_lazy_installs(monkeypatch):
+    """Keep these SDK-gated tests hermetic — forbid the Matrix adapter from
+    lazy-installing ``mautrix`` at runtime. On a CI runner where the matrix
+    extra isn't in ``[all]``, a mid-run install would defeat the tests'
+    ``importorskip``/``import mautrix`` absence checks. Scoped to this file so
+    provider tests that rely on lazy-install are unaffected."""
+    monkeypatch.setenv("SCARLIGHT_DISABLE_LAZY_INSTALLS", "1")
+
+
 def _make_fake_mautrix():
     """Create a lightweight set of fake ``mautrix`` modules.
 

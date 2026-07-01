@@ -207,6 +207,13 @@ class TestInstallHangupProtection:
         if hasattr(_cfg, "_SCARLIGHT_HOME_CACHE"):
             _cfg._SCARLIGHT_HOME_CACHE = None  # type: ignore[attr-defined]
 
+        # Pin stdio to known plain streams before wrapping so the isinstance
+        # assertions are deterministic under xdist. pytest's capture (and any
+        # sibling test that swapped sys.stdout without restoring) can otherwise
+        # leave sys.stdout as an object the wrap check doesn't recognise.
+        monkeypatch.setattr(sys, "stdout", io.StringIO())
+        monkeypatch.setattr(sys, "stderr", io.StringIO())
+
         prev_out, prev_err = sys.stdout, sys.stderr
         state = _install_hangup_protection(gateway_mode=False)
 
