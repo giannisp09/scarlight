@@ -67,7 +67,7 @@ _SCARLIGHT_MODEL_WARNING = (
 # Negative examples it must NOT match:
 #   scarlight-brain:qwen3-14b-ctx16k, qwen3:14b, claude-opus-4-6
 _NOUS_HERMES_NON_AGENTIC_RE = re.compile(
-    r"(?:^|[/:])scarlight[-_ ]?[34](?:[-_.:]|$)",
+    r"(?:^|[/:])hermes[-_ ]?[34](?:[-_.:]|$)",
     re.IGNORECASE,
 )
 
