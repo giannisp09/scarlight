@@ -6,8 +6,8 @@ scope for vulnerability reports.
 
 ## 1. Reporting a Vulnerability
 
-Report privately via [GitHub Security Advisories](https://github.com/NousResearch/hermes-agent/security/advisories/new)
-or **security@nousresearch.com**. Do not open public issues for
+Report privately via [GitHub Security Advisories](https://github.com/giannisp09/scarlight/security/advisories/new).
+Do not open public issues for
 security vulnerabilities. **Scarlight Agent does not operate a bug
 bounty program.**
 
@@ -325,7 +325,7 @@ that:
 
 - **Coordinated disclosure window:** 90 days from report, or until a
   fix is released, whichever comes first.
-- **Channel:** the GHSA thread or email correspondence with
-  security@nousresearch.com.
+- **Channel:** the private GitHub Security Advisory (GHSA) thread
+  opened from the link in §1.
 - **Credit:** reporters are credited in release notes unless
   anonymity is requested.
