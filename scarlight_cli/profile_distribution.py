@@ -488,7 +488,7 @@ def plan_install(
         )
 
     # Version check up-front so we fail fast
-    check_hermes_requires(manifest.hermes_requires, hermes_version)
+    check_hermes_requires(manifest.hermes_requires, scarlight_version)
 
     # Resolve target profile name
     target_name = override_name or manifest.name
