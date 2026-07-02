@@ -207,21 +207,21 @@ class TestInstallHangupProtection:
         if hasattr(_cfg, "_SCARLIGHT_HOME_CACHE"):
             _cfg._SCARLIGHT_HOME_CACHE = None  # type: ignore[attr-defined]
 
-        # Pin stdio to known plain streams before wrapping so the isinstance
-        # assertions are deterministic under xdist. pytest's capture (and any
-        # sibling test that swapped sys.stdout without restoring) can otherwise
-        # leave sys.stdout as an object the wrap check doesn't recognise.
-        monkeypatch.setattr(sys, "stdout", io.StringIO())
-        monkeypatch.setattr(sys, "stderr", io.StringIO())
-
         prev_out, prev_err = sys.stdout, sys.stderr
         state = _install_hangup_protection(gateway_mode=False)
 
         try:
             # On Windows (no SIGHUP) we still wrap stdio and create the log.
             assert state["installed"] is True
-            assert isinstance(sys.stdout, _UpdateOutputStream)
-            assert isinstance(sys.stderr, _UpdateOutputStream)
+            # Check the wrapper by class name, not ``isinstance``. Under CI's
+            # editable install + pytest import mode, ``scarlight_cli.main`` can
+            # be imported under two module keys, giving two distinct
+            # ``_UpdateOutputStream`` class objects. ``_install_hangup_protection``
+            # wraps stdio with its own copy, so ``isinstance`` against the copy
+            # this test imported returns False even though the object IS a
+            # ``_UpdateOutputStream``. Name-based checking is immune to that.
+            assert type(sys.stdout).__name__ == "_UpdateOutputStream"
+            assert type(sys.stderr).__name__ == "_UpdateOutputStream"
             assert state["log_file"] is not None
 
             sys.stdout.write("checking mirror\n")
