@@ -406,7 +406,7 @@ class TestReasoningCommand:
 
         assert result["final_response"] == "ok"
         assert _CapturingAgent.last_init is not None
-        assert "homeassistant" in set(_CapturingAgent.last_init["enabled_toolsets"])
+        assert "scarlight-homeassistant" in set(_CapturingAgent.last_init["enabled_toolsets"])
 
 
 class TestLoadShowReasoningCoercion:

@@ -1,4 +1,4 @@
-# nix/hermes-agent.nix — Overridable Hermes Agent package
+# nix/scarlight.nix — Overridable Scarlight Agent package
 #
 # callPackage auto-wires nixpkgs args; flake inputs are passed explicitly.
 # Users override via:
@@ -31,21 +31,21 @@
 }:
 let
   nodejs = nodejs_22;
-  hermesVenv = callPackage ./python.nix {
+  scarlightVenv = callPackage ./python.nix {
     inherit uv2nix pyproject-nix pyproject-build-systems;
     dependency-groups = [ "all" ] ++ extraDependencyGroups;
   };
 
-  hermesNpmLib = callPackage ./lib.nix {
+  scarlightNpmLib = callPackage ./lib.nix {
     inherit npm-lockfile-fix nodejs;
   };
 
-  hermesTui = callPackage ./tui.nix {
-    inherit hermesNpmLib;
+  scarlightTui = callPackage ./tui.nix {
+    inherit scarlightNpmLib;
   };
 
-  hermesWeb = callPackage ./web.nix {
-    inherit hermesNpmLib;
+  scarlightWeb = callPackage ./web.nix {
+    inherit scarlightNpmLib;
   };
 
   bundledSkills = lib.cleanSourceWith {
@@ -55,7 +55,7 @@ let
 
   # Import bundled plugins (memory, context_engine, platforms/*).  Keeping
   # them out of the Python site-packages keeps import semantics identical
-  # to a dev checkout — the loader reads them from HERMES_BUNDLED_PLUGINS.
+  # to a dev checkout — the loader reads them from SCARLIGHT_BUNDLED_PLUGINS.
   bundledPlugins = lib.cleanSourceWith {
     src = ../plugins;
     filter = path: _type: !(lib.hasInfix "/__pycache__/" path);
@@ -95,7 +95,7 @@ let
 
     # Collect core venv package names
     core = set()
-    venv_sp = pathlib.Path('${hermesVenv}/${sitePackagesPath}')
+    venv_sp = pathlib.Path('${scarlightVenv}/${sitePackagesPath}')
     for di in venv_sp.glob('*.dist-info'):
         meta = di / 'METADATA'
         if meta.exists():
@@ -118,7 +118,7 @@ let
                 if line.startswith('Name:'):
                     pkg = canonical(line.split(':', 1)[1].strip())
                     if pkg in core:
-                        print(f'ERROR: plugin package \"{pkg}\" collides with a package in hermes sealed venv', file=sys.stderr)
+                        print(f'ERROR: plugin package \"{pkg}\" collides with a package in scarlight sealed venv', file=sys.stderr)
                         print(f'  from: {di}', file=sys.stderr)
                         print(f'  Remove this dependency from extraPythonPackages.', file=sys.stderr)
                         sys.exit(1)
@@ -128,7 +128,7 @@ let
   '';
 in
 stdenv.mkDerivation {
-  pname = "hermes-agent";
+  pname = "scarlight-agent";
   version = (fromTOML (builtins.readFile ../pyproject.toml)).project.version;
 
   dontUnpack = true;
@@ -138,37 +138,37 @@ stdenv.mkDerivation {
   installPhase = ''
     runHook preInstall
 
-    mkdir -p $out/share/hermes-agent $out/bin
-    cp -r ${bundledSkills} $out/share/hermes-agent/skills
-    cp -r ${bundledPlugins} $out/share/hermes-agent/plugins
-    cp -r ${hermesWeb} $out/share/hermes-agent/web_dist
+    mkdir -p $out/share/scarlight $out/bin
+    cp -r ${bundledSkills} $out/share/scarlight/skills
+    cp -r ${bundledPlugins} $out/share/scarlight/plugins
+    cp -r ${scarlightWeb} $out/share/scarlight/web_dist
 
     mkdir -p $out/ui-tui
-    cp -r ${hermesTui}/lib/hermes-tui/* $out/ui-tui/
+    cp -r ${scarlightTui}/lib/scarlight-tui/* $out/ui-tui/
 
     ${lib.concatMapStringsSep "\n"
       (name: ''
-        makeWrapper ${hermesVenv}/bin/${name} $out/bin/${name} \
+        makeWrapper ${scarlightVenv}/bin/${name} $out/bin/${name} \
           --suffix PATH : "${runtimePath}" \
-          --set HERMES_BUNDLED_SKILLS $out/share/hermes-agent/skills \
-          --set HERMES_BUNDLED_PLUGINS $out/share/hermes-agent/plugins \
-          --set HERMES_WEB_DIST $out/share/hermes-agent/web_dist \
-          --set HERMES_TUI_DIR $out/ui-tui \
-          --set HERMES_PYTHON ${hermesVenv}/bin/python3 \
-          --set HERMES_NODE ${lib.getExe nodejs} \
-          ${lib.optionalString (rev != null) ''--set HERMES_REVISION ${rev} \''}
+          --set SCARLIGHT_BUNDLED_SKILLS $out/share/scarlight/skills \
+          --set SCARLIGHT_BUNDLED_PLUGINS $out/share/scarlight/plugins \
+          --set SCARLIGHT_WEB_DIST $out/share/scarlight/web_dist \
+          --set SCARLIGHT_TUI_DIR $out/ui-tui \
+          --set SCARLIGHT_PYTHON ${scarlightVenv}/bin/python3 \
+          --set SCARLIGHT_NODE ${lib.getExe nodejs} \
+          ${lib.optionalString (rev != null) ''--set SCARLIGHT_REVISION ${rev} \''}
           ${lib.optionalString (extraPythonPackages != [ ]) ''--suffix PYTHONPATH : "${pythonPath}"''}
       '')
       [
-        "hermes"
-        "hermes-agent"
-        "hermes-acp"
+        "scarlight"
+        "scarlight-agent"
+        "scarlight-acp"
       ]
     }
 
     ${lib.optionalString (extraPythonPackages != [ ]) ''
       echo "=== Checking for plugin/core package collisions ==="
-      ${hermesVenv}/bin/python3 -c "${checkPackageCollisions}"
+      ${scarlightVenv}/bin/python3 -c "${checkPackageCollisions}"
       echo "=== No collisions ==="
     ''}
 
@@ -177,17 +177,17 @@ stdenv.mkDerivation {
 
   passthru = {
     inherit
-      hermesTui
-      hermesWeb
-      hermesNpmLib
-      hermesVenv
+      scarlightTui
+      scarlightWeb
+      scarlightNpmLib
+      scarlightVenv
       ;
 
     devShellHook = ''
-      STAMP=".nix-stamps/hermes-agent"
+      STAMP=".nix-stamps/scarlight"
       STAMP_VALUE="${pyprojectHash}:${uvLockHash}"
       if [ ! -f "$STAMP" ] || [ "$(cat "$STAMP")" != "$STAMP_VALUE" ]; then
-        echo "hermes-agent: installing Python dependencies..."
+        echo "scarlight: installing Python dependencies..."
         uv venv .venv --python ${python312}/bin/python3 2>/dev/null || true
         source .venv/bin/activate
         uv pip install -e ".[all]"
@@ -197,7 +197,7 @@ stdenv.mkDerivation {
         echo "$STAMP_VALUE" > "$STAMP"
       else
         source .venv/bin/activate
-        export HERMES_PYTHON=${hermesVenv}/bin/python3
+        export SCARLIGHT_PYTHON=${scarlightVenv}/bin/python3
       fi
     '';
   };
@@ -205,7 +205,7 @@ stdenv.mkDerivation {
   meta = with lib; {
     description = "AI agent with advanced tool-calling capabilities";
     homepage = "https://github.com/NousResearch/hermes-agent";
-    mainProgram = "hermes";
+    mainProgram = "scarlight";
     license = licenses.mit;
     platforms = platforms.unix;
   };

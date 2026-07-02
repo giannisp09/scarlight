@@ -116,6 +116,7 @@ class TestResolveBedrocRegion:
         assert resolve_bedrock_region(env) == "ap-northeast-1"
 
     def test_defaults_to_us_east_1(self):
+        pytest.importorskip("botocore", reason="botocore required to patch botocore.session")
         from agent.bedrock_adapter import resolve_bedrock_region
         from unittest.mock import patch, MagicMock
         mock_session = MagicMock()
@@ -124,6 +125,7 @@ class TestResolveBedrocRegion:
             assert resolve_bedrock_region({}) == "us-east-1"
 
     def test_falls_back_to_botocore_profile_region(self):
+        pytest.importorskip("botocore", reason="botocore required to patch botocore.session")
         from agent.bedrock_adapter import resolve_bedrock_region
         from unittest.mock import patch, MagicMock
         mock_session = MagicMock()
@@ -132,6 +134,7 @@ class TestResolveBedrocRegion:
             assert resolve_bedrock_region({}) == "eu-central-1"
 
     def test_botocore_failure_falls_back_to_us_east_1(self):
+        pytest.importorskip("botocore", reason="botocore required to patch botocore.session")
         from agent.bedrock_adapter import resolve_bedrock_region
         from unittest.mock import patch
         with patch("botocore.session.get_session", side_effect=Exception("no botocore")):

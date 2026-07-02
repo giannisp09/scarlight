@@ -269,6 +269,7 @@ class TestBedrockRegionRouting:
 
     def test_eu_region_from_botocore_profile_yields_eu_models(self):
         """When botocore resolves eu-central-1, picker shows eu.* model IDs."""
+        pytest.importorskip("botocore", reason="botocore required to patch botocore.session")
         from scarlight_cli.model_switch import list_authenticated_providers
 
         mock_session = MagicMock()
@@ -303,6 +304,7 @@ class TestBedrockRegionRouting:
 
     def test_env_var_takes_priority_over_botocore_profile(self, monkeypatch):
         """AWS_REGION env var wins over botocore profile region."""
+        pytest.importorskip("botocore", reason="botocore required to patch botocore.session")
         from agent.bedrock_adapter import resolve_bedrock_region
 
         monkeypatch.setenv("AWS_REGION", "us-west-2")

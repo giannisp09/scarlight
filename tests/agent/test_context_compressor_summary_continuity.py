@@ -10,7 +10,11 @@ def _compressor() -> ContextCompressor:
         return ContextCompressor(
             model="test/model",
             threshold_percent=0.85,
-            protect_first_n=1,
+            # protect_first_n is "extra messages beyond the implicit system
+            # prompt" — 0 keeps only the system message in the protected head
+            # so the persisted handoff summary at index 1 falls inside the
+            # compressible middle (the scenario these tests exercise).
+            protect_first_n=0,
             protect_last_n=1,
             quiet_mode=True,
         )

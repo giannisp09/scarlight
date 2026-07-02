@@ -22,7 +22,7 @@ from tools.registry import tool_error
 
 logger = logging.getLogger(__name__)
 
-_DEFAULT_CONTAINER_TAG = "hermes"
+_DEFAULT_CONTAINER_TAG = "scarlight"
 _DEFAULT_MAX_RECALL_RESULTS = 10
 _DEFAULT_PROFILE_FREQUENCY = 50
 _DEFAULT_CAPTURE_MODE = "all"
@@ -479,7 +479,7 @@ class SupermemoryMemoryProvider(MemoryProvider):
 
     def initialize(self, session_id: str, **kwargs) -> None:
         from scarlight_constants import get_scarlight_home
-        self._hermes_home = kwargs.get("hermes_home") or str(get_scarlight_home())
+        self._hermes_home = kwargs.get("scarlight_home") or kwargs.get("hermes_home") or str(get_scarlight_home())
         self._session_id = session_id
         self._turn_count = 0
         self._config = _load_supermemory_config(self._hermes_home)
@@ -578,7 +578,7 @@ class SupermemoryMemoryProvider(MemoryProvider):
             f"[role: user]\n{clean_user}\n[user:end]\n\n"
             f"[role: assistant]\n{clean_assistant}\n[assistant:end]"
         )
-        metadata = {"source": "hermes", "type": "conversation_turn"}
+        metadata = {"source": "scarlight", "type": "conversation_turn"}
 
         def _run():
             try:
@@ -691,7 +691,7 @@ class SupermemoryMemoryProvider(MemoryProvider):
         if not isinstance(metadata, dict):
             metadata = {}
         metadata.setdefault("type", _detect_category(content))
-        metadata["source"] = "hermes_tool"
+        metadata["source"] = "scarlight_tool"
         try:
             result = self._client.add_memory(content, metadata=metadata, entity_context=self._entity_context, container_tag=tag)
             preview = content[:80] + ("..." if len(content) > 80 else "")

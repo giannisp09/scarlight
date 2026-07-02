@@ -278,7 +278,7 @@ class TestHistoryDisplay:
             },
             {
                 "id": "20260401_201329_d85961",
-                "title": "Checking Running Scarlight Agent",
+                "title": "Checking Running Scarlight",
                 "preview": "check running gateways for scarlight agent",
                 "last_active": 0,
             },
@@ -288,7 +288,7 @@ class TestHistoryDisplay:
         output = capsys.readouterr().out
 
         assert "No messages in the current chat yet" in output
-        assert "Checking Running Scarlight Agent" in output
+        assert "Checking Running Scarlight" in output
         assert "20260401_201329_d85961" in output
         assert "/resume" in output
         assert "Current preview" not in output
@@ -306,7 +306,7 @@ class TestHistoryDisplay:
             },
             {
                 "id": "20260401_201329_d85961",
-                "title": "Checking Running Scarlight Agent",
+                "title": "Checking Running Scarlight",
                 "preview": "check running gateways for scarlight agent",
                 "last_active": 0,
             },
@@ -316,7 +316,7 @@ class TestHistoryDisplay:
         output = capsys.readouterr().out
 
         assert "Recent sessions" in output
-        assert "Checking Running Scarlight Agent" in output
+        assert "Checking Running Scarlight" in output
         assert "Use /resume <session id or title> to continue" in output
 
 

@@ -510,8 +510,8 @@ def test_launch_tui_exports_model_provider_and_toolsets(monkeypatch, main_mod):
         )
 
     env = captured["env"]
-    assert env["HERMES_MODEL"] == "nous/hermes-test"
-    assert env["HERMES_INFERENCE_MODEL"] == "nous/hermes-test"
+    assert env["SCARLIGHT_MODEL"] == "nous/hermes-test"
+    assert env["SCARLIGHT_INFERENCE_MODEL"] == "nous/hermes-test"
     assert env["SCARLIGHT_TUI_PROVIDER"] == "nous"
     assert env["SCARLIGHT_INFERENCE_PROVIDER"] == "nous"
     assert env["SCARLIGHT_TUI_TOOLSETS"] == "web,terminal"

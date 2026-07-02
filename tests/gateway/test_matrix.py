@@ -12,6 +12,16 @@ from gateway.config import Platform, PlatformConfig
 from gateway.platforms.base import MessageType
 
 
+@pytest.fixture(autouse=True)
+def _forbid_lazy_installs(monkeypatch):
+    """Keep these SDK-gated tests hermetic — forbid the Matrix adapter from
+    lazy-installing ``mautrix`` at runtime. On a CI runner where the matrix
+    extra isn't in ``[all]``, a mid-run install would defeat the tests'
+    ``importorskip``/``import mautrix`` absence checks. Scoped to this file so
+    provider tests that rely on lazy-install are unaffected."""
+    monkeypatch.setenv("SCARLIGHT_DISABLE_LAZY_INSTALLS", "1")
+
+
 def _make_fake_mautrix():
     """Create a lightweight set of fake ``mautrix`` modules.
 
@@ -769,7 +779,13 @@ class TestMatrixRequirements:
         monkeypatch.delenv("MATRIX_ENCRYPTION", raising=False)
 
         from gateway.platforms import matrix as matrix_mod
-        with patch.object(matrix_mod, "_check_e2ee_deps", return_value=False):
+        # Disable the lazy-install path so mautrix availability is deterministic
+        # and matches this test's own ``import mautrix`` probe. Without this,
+        # check_matrix_requirements() would pip-install mautrix on CI runners
+        # with network access and return True even when mautrix isn't
+        # pre-installed, contradicting the ImportError branch below.
+        with patch.object(matrix_mod, "_check_e2ee_deps", return_value=False), \
+                patch("tools.lazy_deps.ensure_and_bind", return_value=False):
             # Still needs mautrix itself to be importable
             try:
                 import mautrix  # noqa: F401
@@ -778,18 +794,23 @@ class TestMatrixRequirements:
                 assert matrix_mod.check_matrix_requirements() is False
 
     def test_check_requirements_encryption_true_with_e2ee_deps(self, monkeypatch):
-        """MATRIX_ENCRYPTION=true should pass if E2EE deps are available."""
+        """MATRIX_ENCRYPTION=true should pass if E2EE deps are available.
+
+        This is the *deps-present* scenario, so it only makes sense when mautrix
+        is actually installed — skip otherwise (mautrix is a lazy-install extra
+        not in [all], absent on CI). The previous ``try/import/except`` form was
+        self-contradictory: it patched ``_check_e2ee_deps`` to True (forcing
+        requirements True) while the ImportError branch asserted False, so it
+        failed on any runner without mautrix.
+        """
+        pytest.importorskip("mautrix")
         monkeypatch.setenv("MATRIX_ACCESS_TOKEN", "syt_test")
         monkeypatch.setenv("MATRIX_HOMESERVER", "https://matrix.example.org")
         monkeypatch.setenv("MATRIX_ENCRYPTION", "true")
 
         from gateway.platforms import matrix as matrix_mod
         with patch.object(matrix_mod, "_check_e2ee_deps", return_value=True):
-            try:
-                import mautrix  # noqa: F401
-                assert matrix_mod.check_matrix_requirements() is True
-            except ImportError:
-                assert matrix_mod.check_matrix_requirements() is False
+            assert matrix_mod.check_matrix_requirements() is True
 
 
 # ---------------------------------------------------------------------------

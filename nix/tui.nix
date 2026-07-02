@@ -1,5 +1,5 @@
-# nix/tui.nix — Hermes TUI (Ink/React) compiled with tsc and bundled
-{ pkgs, hermesNpmLib, ... }:
+# nix/tui.nix — Scarlight TUI (Ink/React) compiled with tsc and bundled
+{ pkgs, scarlightNpmLib, ... }:
 let
   src = ../ui-tui;
   npmDeps = pkgs.fetchNpmDeps {
@@ -7,13 +7,13 @@ let
     hash = "sha256-9r1EYQ600gNXOnNXwakorpEk7hS/FPxZVbB2JksrhYs=";
   };
 
-  npm = hermesNpmLib.mkNpmPassthru { folder = "ui-tui"; attr = "tui"; pname = "hermes-tui"; };
+  npm = scarlightNpmLib.mkNpmPassthru { folder = "ui-tui"; attr = "tui"; pname = "scarlight-tui"; };
 
   packageJson = builtins.fromJSON (builtins.readFile (src + "/package.json"));
   version = packageJson.version;
 in
 pkgs.buildNpmPackage (npm // {
-  pname = "hermes-tui";
+  pname = "scarlight-tui";
   inherit src npmDeps version;
 
   doCheck = false;
@@ -22,13 +22,13 @@ pkgs.buildNpmPackage (npm // {
   installPhase = ''
     runHook preInstall
 
-    mkdir -p $out/lib/hermes-tui
+    mkdir -p $out/lib/scarlight-tui
 
     # Single self-contained bundle built by scripts/build.mjs (esbuild).
-    cp -r dist $out/lib/hermes-tui/dist
+    cp -r dist $out/lib/scarlight-tui/dist
 
     # package.json kept for "type": "module" resolution on `node dist/entry.js`.
-    cp package.json $out/lib/hermes-tui/
+    cp package.json $out/lib/scarlight-tui/
 
     runHook postInstall
   '';

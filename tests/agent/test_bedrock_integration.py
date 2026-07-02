@@ -263,10 +263,17 @@ class TestPackaging:
         content = toml_path.read_text()
         assert 'bedrock = ["boto3' in content
 
-    def test_bedrock_in_all_extra(self):
+    def test_bedrock_excluded_from_all_extra(self):
+        """bedrock is intentionally NOT bundled in the ``[all]`` extra — it is
+        lazy-installed on first use (policy note at pyproject ``[all]``). The
+        standalone ``bedrock`` extra must still be declared so it can be
+        installed explicitly or resolved lazily."""
         from pathlib import Path
         content = (Path(__file__).parent.parent.parent / "pyproject.toml").read_text()
-        assert '"scarlight-agent[bedrock]"' in content
+        # The standalone extra exists...
+        assert 'bedrock = ["boto3' in content
+        # ...but is deliberately excluded from the aggregate [all] bundle.
+        assert '"scarlight[bedrock]"' not in content
 
 
 # ---------------------------------------------------------------------------

@@ -2235,6 +2235,21 @@ def run_slash(rest: str) -> str:
         body = err or out
         return f"⚠ /kanban usage error\n{body}" if body else "⚠ /kanban usage error"
     except argparse.ArgumentError as exc:
+        # On Python 3.11.9+/3.13, ``exit_on_error=False`` raises ArgumentError
+        # (rather than calling ``parser.error()`` → SystemExit) for a
+        # subcommand missing required arguments, which drops the usage line
+        # older Python printed to stderr. Re-attach the subcommand-scoped
+        # usage so the message reads ``usage: /kanban <sub> …`` instead of a
+        # bare error string.
+        _usage = ""
+        for _action in kanban_parser._actions:
+            if isinstance(_action, argparse._SubParsersAction):
+                _sub = _action.choices.get(tokens[0]) if tokens else None
+                if _sub is not None:
+                    _usage = _sub.format_usage().rstrip()
+                break
+        if _usage:
+            return f"⚠ /kanban usage error: {exc}\n{_usage}"
         return f"⚠ /kanban usage error: {exc}"
 
     with contextlib.redirect_stdout(buf_out), contextlib.redirect_stderr(buf_err):

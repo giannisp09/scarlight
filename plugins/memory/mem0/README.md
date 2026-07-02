@@ -25,7 +25,7 @@ Config file: `$SCARLIGHT_HOME/mem0.json`
 
 | Key | Default | Description |
 |-----|---------|-------------|
-| `user_id` | `hermes-user` | User identifier on Mem0 |
+| `user_id` | `scarlight-user` | User identifier on Mem0 |
 | `agent_id` | `hermes` | Agent identifier |
 | `rerank` | `true` | Enable reranking for recall |
 

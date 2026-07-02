@@ -56,6 +56,15 @@ dependencies = [
   # user picks that backend. Smaller `dependencies` = smaller blast
   # radius for the next supply-chain attack.
   "openai==2.24.0",
+  # Defensive pin (same rationale as the block above): cryptography is pulled
+  # transitively (PyJWT[crypto], google-auth, …). Its 49.0.0 PyPI release ships
+  # an internally-inconsistent build whose ``ec.py`` references the
+  # ``cryptography.utils.DeprecatedIn46`` symbol that the same release removed,
+  # so `from cryptography.hazmat.primitives.asymmetric import ec` raises
+  # AttributeError and takes every gateway platform import down with it on a
+  # fresh (unpinned) CI resolve. Pin to the known-good version uv.lock already
+  # resolves. Bump deliberately + regenerate uv.lock, never widen to a range.
+  "cryptography==46.0.5",
   "python-dotenv==1.2.1",
   "fire==0.7.1",
   "httpx[socks]==0.28.1",

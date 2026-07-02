@@ -40,7 +40,7 @@
 }
 /* The Markdown renderer intentionally paints a subtle code pill behind
  * inline ``<code>`` inside task-body prose — but NOT inside a fenced
- * block (those are a ``<pre class="hermes-kanban-md-code">`` with a
+ * block (those are a ``<pre class="scarlight-kanban-md-code">`` with a
  * bare ``<code>`` inside, and the pill would double up with the pre
  * background). ``:not()`` scopes this opt-back-in to inline code only.
  *
@@ -321,17 +321,17 @@
 }
 
 .scarlight-kanban-drawer {
-  width: min(var(--hermes-kanban-drawer-width, 640px), 92vw);
+  width: min(var(--scarlight-kanban-drawer-width, 640px), 92vw);
   height: 100vh;
   background: var(--color-card);
   border-left: 1px solid var(--color-border);
   display: flex;
   flex-direction: column;
   box-shadow: -4px 0 18px rgba(0, 0, 0, 0.35);
-  animation: hermes-kanban-drawer-in 180ms ease-out;
+  animation: scarlight-kanban-drawer-in 180ms ease-out;
 }
 
-@keyframes hermes-kanban-drawer-in {
+@keyframes scarlight-kanban-drawer-in {
   from { transform: translateX(100%); opacity: 0.3; }
   to   { transform: translateX(0);    opacity: 1; }
 }

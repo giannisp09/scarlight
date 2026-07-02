@@ -4382,6 +4382,13 @@ class AIAgent:
                         review_agent.close()
                     except Exception:
                         pass
+                    # Capture the review agent's session messages BEFORE nulling
+                    # the reference — the summary scan below runs after the
+                    # redirect_stdout scope exits and would otherwise see an
+                    # empty list (dropping the self-improvement summary).
+                    _review_session_messages = getattr(
+                        review_agent, "_session_messages", []
+                    )
                     review_agent = None
 
                 # Scan the review agent's messages for successful tool actions
@@ -4391,7 +4398,7 @@ class AIAgent:
                 # re-surface stale "created"/"updated" messages from the prior
                 # conversation as if they just happened (issue #14944).
                 actions = self._summarize_background_review_actions(
-                    getattr(review_agent, "_session_messages", []),
+                    _review_session_messages,
                     messages_snapshot,
                 )
 
